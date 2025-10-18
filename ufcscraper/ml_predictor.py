@@ -572,6 +572,16 @@ class UFCPredictor:
             with open(self.features_path, 'rb') as f:
                 self.feature_columns = pickle.load(f)
 
+            # Extract feature importance from the loaded model
+            if hasattr(self.model, 'feature_importances_') and self.feature_columns:
+                importances = self.model.feature_importances_
+                self.feature_importance = dict(sorted(
+                    zip(self.feature_columns, importances),
+                    key=lambda x: x[1],
+                    reverse=True
+                ))
+                logger.info(f"Loaded feature importance for {len(self.feature_importance)} features")
+
             logger.info(f"Model loaded from {self.model_path}")
             return True
 

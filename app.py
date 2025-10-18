@@ -464,6 +464,10 @@ def main() -> None:
                         help="Force rebuild of datasets even if cache is valid")
     parser.add_argument("--retrain-model", action="store_true",
                         help="Force retrain of ML model")
+    parser.add_argument("--no-web", action="store_true",
+                        help="Skip launching web interface (for automation/headless mode)")
+    parser.add_argument("--port", type=int, default=5000,
+                        help="Port for web interface (default: 5000)")
     args = parser.parse_args()
 
     setup_logging()
@@ -553,6 +557,30 @@ def main() -> None:
 
         if not is_valid:
             logger.warning("⚠ Please check data integrity issues")
+
+        # Step 7: Launch web interface
+        if not args.no_web:
+            logger.info("")
+            logger.info("🌐 Step 7: Launching web interface...")
+            logger.info("=" * 50)
+
+            try:
+                from ufcscraper.web_app import launch_web_app
+                launch_web_app(
+                    data_folder=data_folder,
+                    port=args.port,
+                    auto_open=True,
+                    debug=False
+                )
+            except KeyboardInterrupt:
+                logger.info("\n✓ Web interface closed")
+            except Exception as e:
+                logger.error(f"Error launching web interface: {e}")
+                logger.warning("Continuing without web interface...")
+        else:
+            logger.info("🌐 Step 7: Skipping web interface (--no-web flag)")
+
+        if not is_valid:
             sys.exit(1)
 
     except Exception as e:

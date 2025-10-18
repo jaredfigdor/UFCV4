@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Model Performance - UFC Fight Predictions{% endblock %}
+{% block nav_performance %}active{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-4">
+            <i class="fas fa-chart-line text-danger"></i> Model Performance
+        </h1>
+        <p class="lead text-muted">Machine learning model metrics and feature analysis</p>
+    </div>
+</div>
+
+<!-- Model Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-robot fa-2x text-primary mb-2"></i>
+                <h6 class="text-muted mb-2">Model Type</h6>
+                <p class="mb-0"><strong>{{ metrics.model_type if metrics.model_type else 'Random Forest' }}</strong></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                <h6 class="text-muted mb-2">Status</h6>
+                <p class="mb-0">
+                    {% if metrics.trained %}
+                        <span class="badge bg-success">Trained</span>
+                    {% else %}
+                        <span class="badge bg-warning">Not Trained</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-database fa-2x text-info mb-2"></i>
+                <h6 class="text-muted mb-2">Training Samples</h6>
+                <h5 class="mb-0">{{ "{:,}".format(metrics.training_samples) if metrics.training_samples else 'N/A' }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-crystal-ball fa-2x text-warning mb-2"></i>
+                <h6 class="text-muted mb-2">Prediction Samples</h6>
+                <h5 class="mb-0">{{ metrics.prediction_samples if metrics.prediction_samples else 'N/A' }}</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Metrics (if available from model metadata) -->
+{% if metrics.test_accuracy or metrics.test_auc %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-bullseye fa-2x text-success mb-2"></i>
+                <h6 class="text-muted mb-2">Test Accuracy</h6>
+                <h2 class="mb-0 text-success">{{ "%.1f"|format(metrics.test_accuracy * 100) }}%</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-area fa-2x text-primary mb-2"></i>
+                <h6 class="text-muted mb-2">ROC AUC Score</h6>
+                <h2 class="mb-0 text-primary">{{ "%.3f"|format(metrics.test_auc) }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Feature Importance Chart -->
+{% if feature_chart %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-star"></i> Feature Importance</h5>
+            </div>
+            <div class="card-body">
+                <div id="featureImportanceChart"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Model Information -->
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Model Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Algorithm</h6>
+                        <p>{{ metrics.model_type if metrics.model_type else 'Random Forest Classifier' }}</p>
+
+                        <h6 class="text-muted mt-3">Training Data</h6>
+                        <p>{{ "{:,}".format(metrics.training_samples) if metrics.training_samples else 'N/A' }} completed fights</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Features Used</h6>
+                        <p>100+ advanced features including:
+                            <ul class="small">
+                                <li>Physical attributes (height, reach, weight, age)</li>
+                                <li>Career statistics (wins, losses, experience)</li>
+                                <li>Fighting style metrics (KO rate, submission rate)</li>
+                                <li>Momentum indicators (win streaks, recent performance)</li>
+                                <li>Opponent quality ratings</li>
+                                <li>Career stage analysis</li>
+                            </ul>
+                        </p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>Note:</strong> The model is trained on historical UFC fight data with leak-free temporal feature engineering
+                    to ensure predictions are based only on information available before each fight.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if feature_chart %}
+<script>
+    // Render feature importance chart
+    var featureData = {{ feature_chart | safe }};
+    Plotly.newPlot('featureImportanceChart', featureData.data, featureData.layout, {responsive: true});
+</script>
+{% endif %}
+{% endblock %}
