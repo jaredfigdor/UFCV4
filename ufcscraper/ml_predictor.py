@@ -25,9 +25,13 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.impute import SimpleImputer
+from sklearn.feature_selection import VarianceThreshold
+import xgboost as xgb
+import lightgbm as lgb
+import catboost as cb
 
 if TYPE_CHECKING:
     from typing import Dict, List, Tuple, Optional, Any
@@ -117,8 +121,9 @@ class UFCPredictor:
 
         # Remove only timestamp metadata columns that shouldn't be used for prediction
         # KEEP fight_id, fighter_1, fighter_2, event_id for mapping predictions back to fights
+        # KEEP event_date for temporal train/test splitting
         drop_columns = [
-            'dataset_type', 'created_at', 'event_date',
+            'dataset_type', 'created_at',
             'fighter_1_name', 'fighter_2_name'  # If these exist
         ]
         for col in drop_columns:
@@ -157,7 +162,7 @@ class UFCPredictor:
                 df_processed = df_processed.dropna(subset=['winner'])
 
             unique_values = sorted(df_processed['winner'].unique())
-            logger.info(f"Target cleaning: {original_count} → {len(df_processed)} rows")
+            logger.info(f"Target cleaning: {original_count}  {len(df_processed)} rows")
             logger.info(f"Removed {before_nan - after_nan} NaN targets")
             logger.info(f"Final target values: {unique_values}")
 
@@ -244,7 +249,7 @@ class UFCPredictor:
             logger.info(f"  Removed {removed_count} low-quality rows ({removed_count/original_count*100:.1f}%)")
             logger.info(f"  Kept {len(df_filtered)} high-quality rows ({len(df_filtered)/original_count*100:.1f}%)")
             logger.info(f"  Average feature completeness: {avg_completeness*100:.1f}%")
-            logger.info(f"  Required: ≥{min_feature_threshold*100:.0f}% features + all critical features")
+            logger.info(f"  Required: {min_feature_threshold*100:.0f}% features + all critical features")
 
             # Show what was filtered out
             missing_critical = (critical_missing > 0).sum()
@@ -273,9 +278,14 @@ class UFCPredictor:
 
         # Define essential columns with their imputation strategies
         essential_imputations = {
-            # Fighter ages - use median age for weight class
-            'fighter_1_age': 'median',
-            'fighter_2_age': 'median',
+            # Fighter ages - use median age (UFC average ~30 years)
+            'fighter_1_age': 30.0,
+            'fighter_2_age': 30.0,
+            'age_advantage': 0.0,
+            'fighter_1_fighting_age': 30.0,
+            'fighter_2_fighting_age': 30.0,
+            'fighter_1_age_vs_prime': 0.0,
+            'fighter_2_age_vs_prime': 0.0,
 
             # Physical stats - use median for weight class
             'fighter_1_height_cm': 'median',
@@ -284,12 +294,32 @@ class UFCPredictor:
             'fighter_2_weight_lbs': 'median',
             'fighter_1_reach_cm': 'median',
             'fighter_2_reach_cm': 'median',
+            'height_advantage': 0.0,
+            'reach_advantage': 0.0,
 
             # Core record stats - fill with 0 for newer fighters
             'fighter_1_wins': 'zero',
             'fighter_1_losses': 'zero',
             'fighter_2_wins': 'zero',
             'fighter_2_losses': 'zero',
+
+            # Recent form features - use neutral values
+            'fighter_1_last_3_win_rate': 0.5,
+            'fighter_2_last_3_win_rate': 0.5,
+            'fighter_1_last_5_win_rate': 0.5,
+            'fighter_2_last_5_win_rate': 0.5,
+            'fighter_1_momentum_score': 0.0,
+            'fighter_2_momentum_score': 0.0,
+            'fighter_1_days_since_last_fight': 365.0,  # 1 year default
+            'fighter_2_days_since_last_fight': 365.0,
+
+            # Style features - use neutral/averages
+            'fighter_1_late_finish_rate': 0.3,  # UFC average
+            'fighter_2_late_finish_rate': 0.3,
+            'fighter_1_ko_rate': 0.25,
+            'fighter_2_ko_rate': 0.25,
+            'fighter_1_submission_rate': 0.15,
+            'fighter_2_submission_rate': 0.15,
 
             # Binary features - use mode (most common value)
             'gender_male': 'mode',
@@ -307,6 +337,9 @@ class UFCPredictor:
                     fill_value = df_imputed[col].mode().iloc[0] if len(df_imputed[col].mode()) > 0 else 0
                 elif strategy == 'zero':
                     fill_value = 0
+                elif isinstance(strategy, (int, float)):
+                    # Direct numeric value
+                    fill_value = strategy
                 else:
                     continue
 
@@ -332,45 +365,204 @@ class UFCPredictor:
 
         return df_imputed
 
+    def _create_interaction_features(self, X: pd.DataFrame) -> pd.DataFrame:
+        """
+        Create high-value interaction features from top predictors.
+
+        Based on feature importance analysis, creates interactions between
+        the most predictive features to capture non-linear relationships.
+        """
+        X_enhanced = X.copy()
+
+        # Interaction 1: Record quality × Age advantage
+        if 'record_quality_difference' in X.columns and 'age_advantage' in X.columns:
+            X_enhanced['record_age_interaction'] = (
+                X['record_quality_difference'] * X['age_advantage']
+            )
+
+        # Interaction 2: Wins × Win percentage (experience quality)
+        if 'fighter_1_wins' in X.columns and 'fighter_1_win_percentage' in X.columns:
+            X_enhanced['f1_win_quality'] = X['fighter_1_wins'] * X['fighter_1_win_percentage']
+        if 'fighter_2_wins' in X.columns and 'fighter_2_win_percentage' in X.columns:
+            X_enhanced['f2_win_quality'] = X['fighter_2_wins'] * X['fighter_2_win_percentage']
+
+        # Interaction 3: Late finish rate × Age vs prime (finishing ability decay)
+        if 'fighter_1_late_finish_rate' in X.columns and 'fighter_1_age_vs_prime' in X.columns:
+            X_enhanced['f1_finish_age_factor'] = (
+                X['fighter_1_late_finish_rate'] * (1 - X['fighter_1_age_vs_prime'].clip(0, 1))
+            )
+        if 'fighter_2_late_finish_rate' in X.columns and 'fighter_2_age_vs_prime' in X.columns:
+            X_enhanced['f2_finish_age_factor'] = (
+                X['fighter_2_late_finish_rate'] * (1 - X['fighter_2_age_vs_prime'].clip(0, 1))
+            )
+
+        # Interaction 4: Experience advantage × Win rate gap
+        if 'experience_advantage' in X.columns and 'win_rate_gap' in X.columns:
+            X_enhanced['exp_winrate_interaction'] = (
+                X['experience_advantage'] * X['win_rate_gap']
+            )
+
+        # Interaction 5: Recent form × Total fights (reliability of recent form)
+        if 'fighter_1_last_3_win_rate' in X.columns and 'fighter_1_total_fights' in X.columns:
+            X_enhanced['f1_form_reliability'] = (
+                X['fighter_1_last_3_win_rate'] * np.log1p(X['fighter_1_total_fights'])
+            )
+        if 'fighter_2_last_3_win_rate' in X.columns and 'fighter_2_total_fights' in X.columns:
+            X_enhanced['f2_form_reliability'] = (
+                X['fighter_2_last_3_win_rate'] * np.log1p(X['fighter_2_total_fights'])
+            )
+
+        new_features = len(X_enhanced.columns) - len(X.columns)
+        logger.info(f"Created {new_features} interaction features")
+
+        return X_enhanced
+
+    def _select_features(self, X: pd.DataFrame, y: pd.Series = None) -> pd.DataFrame:
+        """
+        Apply feature selection to remove noise and redundancy.
+
+        3-stage pipeline:
+        1. Remove high-missing features (>50% missing)
+        2. Remove zero/low variance features
+        3. Remove perfectly correlated features (>0.98)
+        """
+        logger.info(f"Feature selection: Starting with {len(X.columns)} features")
+
+        # Stage 1: Remove high-missing features (reduced threshold to 40% from 50%)
+        missing_pct = X.isnull().mean()
+        high_missing = missing_pct[missing_pct > 0.4].index.tolist()
+        if high_missing:
+            logger.info(f"Removing {len(high_missing)} high-missing features (>40%): {high_missing[:5]}...")
+            X = X.drop(columns=high_missing)
+
+        # Stage 2: Remove low variance features
+        selector = VarianceThreshold(threshold=0.01)
+        selector.fit(X.fillna(0))  # Temporarily fill NaN for variance calculation
+        low_var_mask = selector.get_support()
+        low_var_features = X.columns[~low_var_mask].tolist()
+        if low_var_features:
+            logger.info(f"Removing {len(low_var_features)} low-variance features: {low_var_features[:5]}...")
+            X = X.loc[:, low_var_mask]
+
+        # Stage 3: Remove perfectly correlated features
+        corr_matrix = X.corr().abs()
+        upper_triangle = corr_matrix.where(
+            np.triu(np.ones(corr_matrix.shape), k=1).astype(bool)
+        )
+        to_drop = [col for col in upper_triangle.columns if any(upper_triangle[col] > 0.98)]
+        if to_drop:
+            logger.info(f"Removing {len(to_drop)} highly correlated features (>0.98): {to_drop[:5]}...")
+            X = X.drop(columns=to_drop)
+
+        logger.info(f"Feature selection: Reduced to {len(X.columns)} features")
+        return X
+
     def train_model(
         self,
         training_df: pd.DataFrame,
-        model_type: str = "random_forest",
+        model_type: str = "xgboost",
         optimize_hyperparameters: bool = True,
         test_size: float = 0.2
     ) -> Dict[str, Any]:
         """
-        Train the UFC prediction model.
+        Train the UFC prediction model with gradient boosting optimizations.
 
         Args:
             training_df: Preprocessed training dataset
-            model_type: Type of model to train ("random_forest", "gradient_boosting", "logistic")
+            model_type: Type of model ("xgboost", "lightgbm", "catboost", "random_forest", "gradient_boosting", "logistic")
             optimize_hyperparameters: Whether to optimize hyperparameters
             test_size: Fraction of data to use for testing
 
         Returns:
             Dictionary containing model performance metrics
         """
-        logger.info(f"Training {model_type} model...")
+        logger.info(f"Training {model_type} model with anti-overfitting optimizations...")
 
         # Prepare features and target
         if 'winner' not in training_df.columns:
             raise ValueError("Training dataset must contain 'winner' column")
 
-        metadata_columns = ['fight_id', 'fighter_1', 'fighter_2', 'event_id', 'winner', 'dataset_type', 'created_at']
+        # Keep event_date for temporal splitting (but don't use it as a feature)
+        if 'event_date' not in training_df.columns:
+            raise ValueError("Training dataset must contain 'event_date' column for temporal splitting")
+
+        metadata_columns = ['fight_id', 'fighter_1', 'fighter_2', 'event_id', 'winner', 'event_date', 'dataset_type', 'created_at']
         feature_columns = [col for col in training_df.columns if col not in metadata_columns]
+
         X = training_df[feature_columns]
         y = training_df['winner']
+        event_dates = pd.to_datetime(training_df['event_date'])
 
-        # Store feature columns for later use
-        self.feature_columns = feature_columns
+        # DATA AUGMENTATION: Mirror fights to remove positional bias
+        # Original fight: F1 vs F2, winner=1  =>  Mirrored: F2 vs F1, winner=0
+        logger.info(f"Applying data augmentation (mirroring) to remove positional bias...")
+        X_mirrored = X.copy()
 
-        logger.info(f"Training with {len(feature_columns)} features on {len(X)} fights")
+        # Swap all fighter_1 and fighter_2 features
+        for col in X.columns:
+            if 'fighter_1' in col:
+                mirror_col = col.replace('fighter_1', 'fighter_2')
+                if mirror_col in X.columns:
+                    # Swap the values
+                    X_mirrored[col] = X[mirror_col].values
+                    X_mirrored[mirror_col] = X[col].values
 
-        # Split data
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=42, stratify=y
-        )
+        # Flip differential features (advantages become disadvantages)
+        for col in ['age_advantage', 'height_advantage', 'reach_advantage', 'experience_advantage']:
+            if col in X_mirrored.columns:
+                X_mirrored[col] = -X_mirrored[col]
+
+        # Flip record_quality_difference and other differences
+        for col in X_mirrored.columns:
+            if 'difference' in col or 'gap' in col:
+                X_mirrored[col] = -X_mirrored[col]
+
+        # Flip winner labels (1 -> 0, 0 -> 1)
+        y_mirrored = 1 - y
+
+        # Concatenate original + mirrored
+        X = pd.concat([X, X_mirrored], ignore_index=True)
+        y = pd.concat([y, y_mirrored], ignore_index=True)
+        event_dates = pd.concat([event_dates, event_dates], ignore_index=True)
+
+        logger.info(f"Data augmented: {len(training_df)} -> {len(X)} fights (2x)")
+
+        # Interaction features are now created in feature_engineering.py
+        # Apply feature selection
+        X = self._select_features(X, y)
+        self.feature_columns = X.columns.tolist()
+
+        logger.info(f"Training with {len(self.feature_columns)} features on {len(X)} fights")
+
+        # Check class balance and calculate scale_pos_weight for imbalanced data
+        class_counts = y.value_counts()
+        logger.info(f"Class distribution: {dict(class_counts)}")
+        if len(class_counts) == 2:
+            neg_count = class_counts[0]
+            pos_count = class_counts[1]
+            scale_pos_weight = neg_count / pos_count
+            logger.info(f"Class imbalance detected: {neg_count}/{pos_count} = {scale_pos_weight:.2f}")
+            logger.info(f"Using scale_pos_weight={scale_pos_weight:.2f} to handle imbalance")
+        else:
+            scale_pos_weight = 1.0
+
+        # TEMPORAL SPLIT: Train on older fights, test on recent fights to prevent leakage
+        # Sort by date and split chronologically
+        sorted_indices = event_dates.sort_values().index
+        split_idx = int(len(sorted_indices) * (1 - test_size))
+
+        train_indices = sorted_indices[:split_idx]
+        test_indices = sorted_indices[split_idx:]
+
+        X_train = X.loc[train_indices]
+        X_test = X.loc[test_indices]
+        y_train = y.loc[train_indices]
+        y_test = y.loc[test_indices]
+
+        train_date_range = event_dates.loc[train_indices]
+        test_date_range = event_dates.loc[test_indices]
+        logger.info(f"Temporal split: Train from {train_date_range.min()} to {train_date_range.max()}")
+        logger.info(f"Temporal split: Test from {test_date_range.min()} to {test_date_range.max()}")
 
         # Final check for any remaining missing values
         if X_train.isnull().any().any():
@@ -379,52 +571,149 @@ class UFCPredictor:
             X_train = pd.DataFrame(final_imputer.fit_transform(X_train), columns=X_train.columns, index=X_train.index)
             X_test = pd.DataFrame(final_imputer.transform(X_test), columns=X_test.columns, index=X_test.index)
 
-        # Scale features
+        # Scale features (important for some models)
         self.scaler = StandardScaler()
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled = self.scaler.transform(X_test)
 
-        # Select and configure model
-        if model_type == "random_forest":
-            base_model = RandomForestClassifier(random_state=42, n_jobs=-1)
+        # Convert back to DataFrame for XGBoost/LightGBM/CatBoost
+        X_train_scaled = pd.DataFrame(X_train_scaled, columns=X_train.columns, index=X_train.index)
+        X_test_scaled = pd.DataFrame(X_test_scaled, columns=X_test.columns, index=X_test.index)
+
+        # Select and configure model with AGGRESSIVE ANTI-OVERFITTING SETTINGS
+        if model_type == "xgboost":
+            base_model = xgb.XGBClassifier(
+                random_state=42,
+                n_jobs=-1,
+                scale_pos_weight=scale_pos_weight,  # CRITICAL: Handle class imbalance
+                early_stopping_rounds=20,  # CRITICAL: Stop when validation plateaus
+                eval_metric='auc'
+            )
             param_grid = {
-                'n_estimators': [100, 200, 300],
-                'max_depth': [10, 20, None],
-                'min_samples_split': [2, 5, 10],
-                'min_samples_leaf': [1, 2, 4]
+                'n_estimators': [200, 300],  # Increased: more trees for better learning
+                'max_depth': [4, 5],  # Slightly deeper: better feature interactions
+                'learning_rate': [0.01, 0.03],  # Keep slow learning for stability
+                'subsample': [0.7, 0.8],  # Less aggressive: keep more data
+                'colsample_bytree': [0.7, 0.8],  # Less aggressive: keep more features
+                'min_child_weight': [10, 20],  # Reduced: allow more splits
+                'reg_alpha': [0.5, 2],  # Reduced L1: less feature suppression
+                'reg_lambda': [5, 10],  # Reduced L2: less weight penalization
+            } if optimize_hyperparameters else {}
+
+        elif model_type == "lightgbm":
+            base_model = lgb.LGBMClassifier(
+                random_state=42,
+                n_jobs=-1,
+                class_weight='balanced',  # CRITICAL: Handle class imbalance
+                verbose=-1
+            )
+            param_grid = {
+                'n_estimators': [150, 200],
+                'max_depth': [3, 4],
+                'learning_rate': [0.01, 0.03],
+                'subsample': [0.6, 0.7],
+                'colsample_bytree': [0.6, 0.7],
+                'min_child_samples': [15, 25],
+                'reg_alpha': [1, 3],
+                'reg_lambda': [8, 12],
+            } if optimize_hyperparameters else {}
+
+        elif model_type == "catboost":
+            base_model = cb.CatBoostClassifier(
+                random_state=42,
+                thread_count=-1,
+                auto_class_weights='Balanced',  # CRITICAL: Handle class imbalance
+                verbose=False
+            )
+            param_grid = {
+                'iterations': [150, 200],
+                'depth': [3, 4],
+                'learning_rate': [0.01, 0.03],
+                'l2_leaf_reg': [8, 12],
+            } if optimize_hyperparameters else {}
+
+        elif model_type == "random_forest":
+            base_model = RandomForestClassifier(
+                random_state=42,
+                n_jobs=-1,
+                class_weight='balanced'
+            )
+            param_grid = {
+                'n_estimators': [100, 200],
+                'max_depth': [10, 15],
+                'min_samples_split': [5, 10],
+                'min_samples_leaf': [2, 4]
             } if optimize_hyperparameters else {}
 
         elif model_type == "gradient_boosting":
             base_model = GradientBoostingClassifier(random_state=42)
             param_grid = {
-                'n_estimators': [100, 200],
-                'learning_rate': [0.05, 0.1, 0.2],
-                'max_depth': [3, 5, 7]
+                'n_estimators': [100, 150],
+                'learning_rate': [0.01, 0.05],
+                'max_depth': [3, 4],
+                'subsample': [0.7, 0.8]
             } if optimize_hyperparameters else {}
 
         elif model_type == "logistic":
-            base_model = LogisticRegression(random_state=42, max_iter=1000)
+            base_model = LogisticRegression(
+                random_state=42,
+                max_iter=1000,
+                class_weight='balanced'
+            )
             param_grid = {
-                'C': [0.1, 1, 10, 100],
-                'penalty': ['l1', 'l2']
+                'C': [0.1, 1, 10],
+                'penalty': ['l2']
             } if optimize_hyperparameters else {}
 
         else:
             raise ValueError(f"Unsupported model type: {model_type}")
 
-        # Train model (with or without hyperparameter optimization)
+        # Train model with STRATIFIED K-FOLD CV and ROC-AUC optimization
         if optimize_hyperparameters and param_grid:
-            logger.info("Optimizing hyperparameters...")
+            logger.info(f"Optimizing hyperparameters with {len(param_grid)} combinations...")
+            logger.info("Using Stratified 3-Fold CV with ROC-AUC scoring (better for imbalanced data)")
+
+            # Use stratified k-fold for better class balance in folds
+            cv_strategy = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+
+            # Special handling for XGBoost early stopping
+            if model_type == "xgboost":
+                fit_params = {
+                    'eval_set': [(X_test_scaled, y_test)],
+                    'verbose': False
+                }
+            else:
+                fit_params = {}
+
             grid_search = GridSearchCV(
-                base_model, param_grid, cv=5, scoring='accuracy', n_jobs=-1
+                base_model,
+                param_grid,
+                cv=cv_strategy,
+                scoring='roc_auc',  # CRITICAL: Use ROC-AUC instead of accuracy
+                n_jobs=-1,
+                verbose=1
             )
-            grid_search.fit(X_train_scaled, y_train)
+
+            if fit_params:
+                grid_search.fit(X_train_scaled, y_train, **fit_params)
+            else:
+                grid_search.fit(X_train_scaled, y_train)
+
             self.model = grid_search.best_estimator_
             logger.info(f"Best parameters: {grid_search.best_params_}")
+            logger.info(f"Best CV ROC-AUC: {grid_search.best_score_:.3f}")
         else:
             logger.info("Training with default parameters...")
             self.model = base_model
-            self.model.fit(X_train_scaled, y_train)
+
+            if model_type == "xgboost":
+                self.model.fit(
+                    X_train_scaled, y_train,
+                    eval_set=[(X_test_scaled, y_test)],
+                    verbose=False
+                )
+            else:
+                self.model.fit(X_train_scaled, y_train)
 
         # Evaluate model
         train_pred = self.model.predict(X_train_scaled)
@@ -433,31 +722,55 @@ class UFCPredictor:
         test_proba = self.model.predict_proba(X_test_scaled)[:, 1]
 
         # Calculate metrics
+        train_acc = accuracy_score(y_train, train_pred)
+        test_acc = accuracy_score(y_test, test_pred)
+        train_auc = roc_auc_score(y_train, train_proba)
+        test_auc = roc_auc_score(y_test, test_proba)
+        train_test_gap = train_acc - test_acc
+
         metrics = {
             'model_type': model_type,
-            'train_accuracy': accuracy_score(y_train, train_pred),
-            'test_accuracy': accuracy_score(y_test, test_pred),
-            'train_auc': roc_auc_score(y_train, train_proba),
-            'test_auc': roc_auc_score(y_test, test_proba),
-            'n_features': len(feature_columns),
+            'train_accuracy': train_acc,
+            'test_accuracy': test_acc,
+            'train_test_gap': train_test_gap,
+            'train_auc': train_auc,
+            'test_auc': test_auc,
+            'n_features': len(self.feature_columns),
             'training_samples': len(X_train),
-            'test_samples': len(X_test)
+            'test_samples': len(X_test),
+            'scale_pos_weight': scale_pos_weight
         }
 
         self.model_metrics = metrics
 
-        # Feature importance (for tree-based models)
+        # Feature importance
         if hasattr(self.model, 'feature_importances_'):
-            feature_importance = dict(zip(feature_columns, self.model.feature_importances_))
-            # Sort by importance
+            feature_importance = dict(zip(self.feature_columns, self.model.feature_importances_))
             self.feature_importance = dict(
                 sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
             )
 
+        # Log results with overfitting warnings
         logger.info(f"Model training completed:")
-        logger.info(f"  Training accuracy: {metrics['train_accuracy']:.3f}")
-        logger.info(f"  Test accuracy: {metrics['test_accuracy']:.3f}")
-        logger.info(f"  Test AUC: {metrics['test_auc']:.3f}")
+        logger.info(f"  Training accuracy: {train_acc:.3f}")
+        logger.info(f"  Test accuracy:     {test_acc:.3f}")
+        logger.info(f"  Train-test gap:    {train_test_gap:.3f}")
+        logger.info(f"  Train AUC:         {train_auc:.3f}")
+        logger.info(f"  Test AUC:          {test_auc:.3f}")
+
+        # Overfitting warnings
+        if train_acc > 0.85:
+            logger.warning(f"  Training accuracy {train_acc:.1%} is suspiciously high - possible overfitting!")
+        if train_test_gap > 0.15:
+            logger.warning(f"  Train-test gap {train_test_gap:.1%} is too large - model is overfitting!")
+        if train_acc < 0.60:
+            logger.warning(f"  Training accuracy {train_acc:.1%} is very low - model may be underfitting!")
+
+        # Success indicators
+        if 0.65 <= train_acc <= 0.75 and train_test_gap < 0.10:
+            logger.info(" Healthy train-test balance - good generalization!")
+        if test_auc > 0.70:
+            logger.info(" Strong ROC-AUC score - good probability calibration!")
 
         # Save model
         self._save_model()
@@ -483,7 +796,10 @@ class UFCPredictor:
         if self.feature_columns is None:
             raise ValueError("Feature columns not defined. Train model first.")
 
-        # Ensure all required features are present
+        # Extract all available features (interaction features already in dataset)
+        metadata_columns = ['fight_id', 'fighter_1', 'fighter_2', 'event_id', 'winner', 'event_date', 'dataset_type', 'created_at']
+
+        # Select only the features that were used in training
         missing_features = set(self.feature_columns) - set(prediction_df.columns)
         if missing_features:
             raise ValueError(f"Missing features in prediction data: {missing_features}")

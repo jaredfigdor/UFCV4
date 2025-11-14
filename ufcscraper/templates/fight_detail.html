@@ -250,7 +250,7 @@
                         <h6 class="text-muted">Key Features</h6>
                         <ul class="list-unstyled">
                             {% for key, value in advanced_features.items() %}
-                                {% if loop.index <= 10 and key not in ['fight_id', 'event_id', 'fighter_1', 'fighter_2', 'winner', 'event_date'] %}
+                                {% if loop.index <= 150 and key not in ['fight_id', 'event_id', 'fighter_1', 'fighter_2', 'winner', 'event_date'] %}
                                 <li><small><strong>{{ key }}:</strong> {{ "%.3f"|format(value) if value is number else value }}</small></li>
                                 {% endif %}
                             {% endfor %}

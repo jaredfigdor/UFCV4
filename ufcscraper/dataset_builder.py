@@ -72,7 +72,7 @@ class DatasetBuilder:
         Returns:
             Tuple of (training_dataset, prediction_dataset)
         """
-        logger.info("🔄 Building UFC fight prediction datasets...")
+        logger.info(" Building UFC fight prediction datasets...")
 
         # Load raw data
         logger.info("Loading raw data files...")
@@ -113,7 +113,7 @@ class DatasetBuilder:
         if not self.feature_engineer.validate_features(training_dataset, prediction_dataset):
             raise ValueError("Feature consistency validation failed")
 
-        logger.info(f"✓ Datasets built successfully:")
+        logger.info(f" Datasets built successfully:")
         logger.info(f"  Training: {len(training_dataset)} fights, {len(training_dataset.columns)} features")
         logger.info(f"  Prediction: {len(prediction_dataset)} fights, {len(prediction_dataset.columns)} features")
 
@@ -241,14 +241,21 @@ class DatasetBuilder:
 
         logger.info(f"Creating features for {len(training_fights)} training fights")
 
-        # Create features
+        # Merge training fights with event dates for temporal filtering
+        all_fights_with_dates = training_fights.merge(
+            raw_data['events'][['event_id', 'event_date']],
+            on='event_id',
+            how='left'
+        )
+
+        # Create features with temporal awareness (CRITICAL: pass all_completed_fights)
         training_dataset = self.feature_engineer.create_fight_features(
             fights_df=training_fights,
             fighters_df=raw_data['fighters'],
             rounds_df=raw_data['rounds'],
             events_df=raw_data['events'],
             is_prediction=False,
-            all_completed_fights=None  # Not needed for training
+            all_completed_fights=all_fights_with_dates  # FIXED: Pass all fights for temporal filtering
         )
 
         # Remove rows with missing target
@@ -457,7 +464,7 @@ class DatasetBuilder:
             with open(self.dataset_metadata_file, 'r') as f:
                 metadata = json.load(f)
 
-            logger.info(f"📁 Loaded cached datasets:")
+            logger.info(f" Loaded cached datasets:")
             logger.info(f"  Training: {len(training_dataset)} fights, {len(training_dataset.columns)} features")
             logger.info(f"  Prediction: {len(prediction_dataset)} fights, {len(prediction_dataset.columns)} features")
             logger.info(f"  Cache created: {metadata.get('creation_date', 'Unknown')}")
@@ -563,7 +570,7 @@ class DatasetBuilder:
 
             # Load cached training dataset
             training_dataset = pd.read_csv(training_cache_file, encoding='utf-8')
-            logger.info(f"📁 Using cached training dataset ({len(training_dataset)} fights)")
+            logger.info(f" Using cached training dataset ({len(training_dataset)} fights)")
             return training_dataset
 
         except Exception as e:
@@ -601,7 +608,7 @@ class DatasetBuilder:
             with open(training_metadata_file, 'w') as f:
                 json.dump(metadata, f, indent=2)
 
-            logger.info(f"💾 Training dataset cached ({len(training_dataset)} fights)")
+            logger.info(f" Training dataset cached ({len(training_dataset)} fights)")
 
         except Exception as e:
             logger.warning(f"Failed to save training cache: {e}")
@@ -646,7 +653,7 @@ class DatasetBuilder:
 
             # Load cached prediction dataset
             prediction_dataset = pd.read_csv(prediction_cache_file, encoding='utf-8')
-            logger.info(f"📁 Using cached prediction dataset ({len(prediction_dataset)} fights)")
+            logger.info(f" Using cached prediction dataset ({len(prediction_dataset)} fights)")
             return prediction_dataset
 
         except Exception as e:
@@ -682,7 +689,7 @@ class DatasetBuilder:
             with open(prediction_metadata_file, 'w') as f:
                 json.dump(metadata, f, indent=2)
 
-            logger.info(f"💾 Prediction dataset cached ({len(prediction_dataset)} fights)")
+            logger.info(f" Prediction dataset cached ({len(prediction_dataset)} fights)")
 
         except Exception as e:
             logger.warning(f"Failed to save prediction cache: {e}")

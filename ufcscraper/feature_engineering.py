@@ -83,8 +83,17 @@ class FeatureEngineering:
             if is_prediction and all_completed_fights is not None:
                 # For predictions, use all completed fights as historical context
                 historical_context = all_completed_fights
+            elif not is_prediction and all_completed_fights is not None:
+                # For training, use ALL completed fights before current fight date to prevent leakage
+                current_fight_date = fight['event_date']
+                # Ensure dates are datetime for comparison
+                all_completed_fights_copy = all_completed_fights.copy()
+                all_completed_fights_copy['event_date'] = pd.to_datetime(all_completed_fights_copy['event_date'])
+                historical_context = all_completed_fights_copy[
+                    all_completed_fights_copy['event_date'] < current_fight_date
+                ]
             else:
-                # For training, use fights before current fight date to prevent leakage
+                # Fallback: use only fights in current dataset before current fight
                 current_fight_date = fight['event_date']
                 historical_context = fights_with_dates[
                     fights_with_dates['event_date'] < current_fight_date
@@ -146,8 +155,13 @@ class FeatureEngineering:
         # Fighter physical features
         features.update(self._create_physical_features(fighter_1_data, fighter_2_data, fight))
 
-        # Fighter record features
-        features.update(self._create_record_features(fighter_1_data, fighter_2_data))
+        # Fighter record features (using temporal snapshots to prevent leakage)
+        features.update(self._create_record_features(
+            fighter_1_data, fighter_2_data,
+            current_fight=fight,
+            all_fights=all_fights,
+            is_prediction=is_prediction
+        ))
 
         # Historical performance features
         features.update(self._create_historical_features(
@@ -182,14 +196,69 @@ class FeatureEngineering:
             fight, fighter_1_data, fighter_2_data, all_fights, fighters_df
         ))
 
+        # Interaction features - create polynomial combinations of top predictors
+        features.update(self._create_interaction_features_inline(features))
+
         return features
+
+    def _create_interaction_features_inline(self, features: Dict) -> Dict:
+        """Create interaction features from existing features."""
+        interactions = {}
+
+        # Interaction 1: Record quality × Age advantage
+        if 'record_quality_difference' in features and 'age_advantage' in features:
+            interactions['record_age_interaction'] = (
+                features['record_quality_difference'] * features['age_advantage']
+            )
+
+        # Interaction 2: Wins × Win percentage (experience quality)
+        if 'fighter_1_wins' in features and 'fighter_1_win_percentage' in features:
+            interactions['f1_win_quality'] = features['fighter_1_wins'] * features['fighter_1_win_percentage']
+        if 'fighter_2_wins' in features and 'fighter_2_win_percentage' in features:
+            interactions['f2_win_quality'] = features['fighter_2_wins'] * features['fighter_2_win_percentage']
+
+        # Interaction 3: Late finish rate × Age vs prime
+        if 'fighter_1_late_finish_rate' in features and 'fighter_1_age_vs_prime' in features:
+            age_factor = 1 - min(max(features['fighter_1_age_vs_prime'], 0), 1)
+            interactions['f1_finish_age_factor'] = features['fighter_1_late_finish_rate'] * age_factor
+        if 'fighter_2_late_finish_rate' in features and 'fighter_2_age_vs_prime' in features:
+            age_factor = 1 - min(max(features['fighter_2_age_vs_prime'], 0), 1)
+            interactions['f2_finish_age_factor'] = features['fighter_2_late_finish_rate'] * age_factor
+
+        # Interaction 4: Experience advantage × Win rate gap
+        if 'experience_advantage' in features and 'fighter_1_win_percentage' in features and 'fighter_2_win_percentage' in features:
+            win_rate_gap = features['fighter_1_win_percentage'] - features['fighter_2_win_percentage']
+            interactions['exp_winrate_interaction'] = features['experience_advantage'] * win_rate_gap
+
+        # Interaction 5: Recent form × Total fights (reliability)
+        if 'fighter_1_last_3_win_rate' in features and 'fighter_1_total_fights' in features:
+            interactions['f1_form_reliability'] = features['fighter_1_last_3_win_rate'] * np.log1p(features['fighter_1_total_fights'])
+        if 'fighter_2_last_3_win_rate' in features and 'fighter_2_total_fights' in features:
+            interactions['f2_form_reliability'] = features['fighter_2_last_3_win_rate'] * np.log1p(features['fighter_2_total_fights'])
+
+        return interactions
 
     def _create_fight_context_features(self, fight: pd.Series) -> Dict:
         """Create fight context features."""
         features = {}
 
-        # Weight class (single column, not one-hot!)
-        features['weight_class'] = fight.get('weight_class', 'Unknown')
+        # Weight class - encode as numeric for XGBoost
+        # Ordered by weight (lightest to heaviest)
+        weight_class_map = {
+            'Flyweight': 1,
+            'Bantamweight': 2,
+            'Featherweight': 3,
+            'Lightweight': 4,
+            'Welterweight': 5,
+            'Middleweight': 6,
+            'Light Heavyweight': 7,
+            'Heavyweight': 8,
+            'Catch Weight': 4.5,  # Between typical weight classes
+            'Open Weight': 8.5,  # Heavier than heavyweight
+            'Unknown': 5  # Default to middle
+        }
+        wc = fight.get('weight_class', 'Unknown')
+        features['weight_class'] = weight_class_map.get(wc, 5)  # Default to 5 (middleweight)
 
         # Title fight
         features['title_fight'] = 1 if fight.get('title_fight') == 'T' else 0
@@ -253,30 +322,156 @@ class FeatureEngineering:
 
         return features
 
-    def _create_record_features(self, fighter_1: pd.Series, fighter_2: pd.Series) -> Dict:
-        """Create fighter record features."""
+    def _calculate_record_at_time(
+        self,
+        fighter_id: str,
+        fighter_data: pd.Series,
+        all_fights: pd.DataFrame,
+        cutoff_date: pd.Timestamp
+    ) -> Dict:
+        """
+        Calculate a fighter's win-loss-draw record at a specific point in time.
+
+        Uses the fighter's current career totals from fighter_data.csv as baseline,
+        then subtracts any UFC fights that occurred AFTER the cutoff date.
+
+        This handles:
+        - Pre-UFC career fights (included in fighter_data totals)
+        - Fights outside our dataset date range
+        - Temporal accuracy (no data leakage)
+        """
+        # Start with current career totals from fighter_data
+        current_wins = fighter_data.get('fighter_w', 0)
+        current_losses = fighter_data.get('fighter_l', 0)
+        current_draws = fighter_data.get('fighter_d', 0)
+
+        # Handle NaN values
+        current_wins = 0 if pd.isna(current_wins) else int(current_wins)
+        current_losses = 0 if pd.isna(current_losses) else int(current_losses)
+        current_draws = 0 if pd.isna(current_draws) else int(current_draws)
+
+        # Get all UFC fights AFTER cutoff date (these shouldn't be counted)
+        future_fights = all_fights[
+            ((all_fights['fighter_1'] == fighter_id) | (all_fights['fighter_2'] == fighter_id)) &
+            (pd.to_datetime(all_fights['event_date']) >= cutoff_date)
+        ].copy()
+
+        # Subtract future fight results from current totals
+        future_wins = 0
+        future_losses = 0
+        future_draws = 0
+
+        for _, fight in future_fights.iterrows():
+            if 'winner' in fight and pd.notna(fight['winner']):
+                if fight['winner'] == fighter_id:
+                    future_wins += 1
+                else:
+                    # Check if it's a draw
+                    if fight.get('result') and 'Draw' in str(fight['result']):
+                        future_draws += 1
+                    else:
+                        future_losses += 1
+            elif fight.get('result') and 'Draw' in str(fight['result']):
+                future_draws += 1
+
+        # Calculate record at cutoff time (current - future)
+        wins = max(0, current_wins - future_wins)
+        losses = max(0, current_losses - future_losses)
+        draws = max(0, current_draws - future_draws)
+
+        total_fights = wins + losses + draws
+        win_percentage = wins / total_fights if total_fights > 0 else 0.0
+
+        return {
+            'wins': wins,
+            'losses': losses,
+            'draws': draws,
+            'total_fights': total_fights,
+            'win_percentage': win_percentage
+        }
+
+    def _create_record_features(
+        self,
+        fighter_1: pd.Series,
+        fighter_2: pd.Series,
+        current_fight: pd.Series = None,
+        all_fights: pd.DataFrame = None,
+        is_prediction: bool = False
+    ) -> Dict:
+        """
+        Create fighter record features using temporal snapshots.
+
+        For prediction fights (upcoming): Uses current career totals from fighter_data.csv
+        For historical fights (training): Calculates record at that point in time to prevent leakage
+        """
         features = {}
 
-        for i, fighter in enumerate([fighter_1, fighter_2], 1):
+        # For upcoming fights (prediction), use current career totals from fighter_data
+        if is_prediction:
+            for i, fighter in enumerate([fighter_1, fighter_2], 1):
+                prefix = f'fighter_{i}_'
+
+                # Use actual career record from fighter_data.csv
+                wins = fighter.get('fighter_w', 0)
+                losses = fighter.get('fighter_l', 0)
+                draws = fighter.get('fighter_d', 0)
+
+                # Handle NaN values
+                wins = 0 if pd.isna(wins) else int(wins)
+                losses = 0 if pd.isna(losses) else int(losses)
+                draws = 0 if pd.isna(draws) else int(draws)
+
+                total_fights = wins + losses + draws
+                win_percentage = (wins / total_fights) if total_fights > 0 else 0.0
+
+                features[f'{prefix}wins'] = wins
+                features[f'{prefix}losses'] = losses
+                features[f'{prefix}draws'] = draws
+                features[f'{prefix}total_fights'] = total_fights
+                features[f'{prefix}win_percentage'] = win_percentage
+
+            # Experience advantage
+            features['experience_advantage'] = (
+                features['fighter_1_total_fights'] - features['fighter_2_total_fights']
+            )
+
+            return features
+
+        # For historical fights (training), calculate record at that point in time
+        if current_fight is None or all_fights is None or all_fights.empty:
+            # Fallback: Set all record features to zero for fighters with no history
+            for i in [1, 2]:
+                prefix = f'fighter_{i}_'
+                features[f'{prefix}wins'] = 0
+                features[f'{prefix}losses'] = 0
+                features[f'{prefix}draws'] = 0
+                features[f'{prefix}total_fights'] = 0
+                features[f'{prefix}win_percentage'] = 0.0
+            features['experience_advantage'] = 0
+            return features
+
+        current_fight_date = pd.to_datetime(current_fight['event_date'])
+
+        for i, (fighter, fighter_id) in enumerate([
+            (fighter_1, current_fight['fighter_1']),
+            (fighter_2, current_fight['fighter_2'])
+        ], 1):
             prefix = f'fighter_{i}_'
 
-            # Basic record
-            wins = fighter.get('fighter_w', 0) or 0
-            losses = fighter.get('fighter_l', 0) or 0
-            draws = fighter.get('fighter_d', 0) or 0
+            # Calculate record from historical fights BEFORE current fight
+            record = self._calculate_record_at_time(
+                fighter_id=fighter_id,
+                fighter_data=fighter,
+                all_fights=all_fights,
+                cutoff_date=current_fight_date
+            )
 
-            total_fights = wins + losses + draws
-
-            features[f'{prefix}wins'] = wins
-            features[f'{prefix}losses'] = losses
-            features[f'{prefix}draws'] = draws
-            features[f'{prefix}total_fights'] = total_fights
-
-            # Win percentage
-            if total_fights > 0:
-                features[f'{prefix}win_percentage'] = wins / total_fights
-            else:
-                features[f'{prefix}win_percentage'] = 0
+            # Assign record features
+            features[f'{prefix}wins'] = record['wins']
+            features[f'{prefix}losses'] = record['losses']
+            features[f'{prefix}draws'] = record['draws']
+            features[f'{prefix}total_fights'] = record['total_fights']
+            features[f'{prefix}win_percentage'] = record['win_percentage']
 
         # Experience advantage
         features['experience_advantage'] = (

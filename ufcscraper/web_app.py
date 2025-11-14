@@ -40,14 +40,10 @@ def load_predictions_data() -> pd.DataFrame:
     """Load fight predictions from CSV file."""
     data_folder = Path(app.config['DATA_FOLDER'])
 
-    # Try loading summary file first, fallback to full predictions
-    summary_file = data_folder / "fight_predictions_summary.csv"
+    # Always load the full predictions file which has fighter IDs
     full_file = data_folder / "fight_predictions.csv"
 
-    if summary_file.exists():
-        df = pd.read_csv(summary_file, encoding='utf-8')
-        logger.info(f"Loaded {len(df)} predictions from summary file")
-    elif full_file.exists():
+    if full_file.exists():
         df = pd.read_csv(full_file, encoding='utf-8')
         logger.info(f"Loaded {len(df)} predictions from full file")
     else:

@@ -119,7 +119,7 @@ def scrape_new_data(data_folder: Path, scrape_upcoming: bool, scrape_completed: 
             logger.info("Scraping upcoming fights...")
             scraper.upcoming_fight_scraper.scrape_fights()
 
-            logger.info("✓ Upcoming data scraping completed")
+            logger.info(" Upcoming data scraping completed")
         except Exception as e:
             logger.error(f"Error scraping upcoming data: {e}")
             raise
@@ -139,7 +139,7 @@ def scrape_new_data(data_folder: Path, scrape_upcoming: bool, scrape_completed: 
             logger.info("Scraping completed fights...")
             scraper.fight_scraper.scrape_fights()
 
-            logger.info("✓ Completed data scraping finished")
+            logger.info(" Completed data scraping finished")
         except Exception as e:
             logger.error(f"Error scraping completed data: {e}")
             raise
@@ -205,7 +205,7 @@ def move_completed_events(data_folder: Path) -> int:
     try:
         logger.info("Running data consistency management...")
         consistency_manager.manage_event_consistency()
-        logger.info(f"✓ Successfully moved {moved_count} events to completed data")
+        logger.info(f" Successfully moved {moved_count} events to completed data")
     except Exception as e:
         logger.error(f"Error in consistency management: {e}")
         moved_count = 0
@@ -226,7 +226,7 @@ def build_updated_datasets(data_folder: Path, force_rebuild: bool = False) -> tu
     """
     logger = logging.getLogger(__name__)
 
-    logger.info("🤖 Building/loading ML datasets...")
+    logger.info(" Building/loading ML datasets...")
 
     try:
         dataset_builder = DatasetBuilder(data_folder)
@@ -242,7 +242,7 @@ def build_updated_datasets(data_folder: Path, force_rebuild: bool = False) -> tu
         prediction_count = len(prediction_dataset)
         feature_count = len(training_dataset.columns) - 1  # Exclude target
 
-        logger.info(f"✓ ML datasets ready:")
+        logger.info(f" ML datasets ready:")
         logger.info(f"   Training dataset: {training_count:,} fights")
         logger.info(f"   Prediction dataset: {prediction_count} fights")
         logger.info(f"   Features: {feature_count} advanced features")
@@ -258,16 +258,16 @@ def validate_data_integrity(data_folder: Path) -> bool:
     """Validate data integrity across all files."""
     logger = logging.getLogger(__name__)
 
-    logger.info("🔍 Validating data integrity...")
+    logger.info(" Validating data integrity...")
 
     try:
         consistency_manager = DataConsistencyManager(data_folder)
         is_valid = consistency_manager.validate_data_integrity()
 
         if is_valid:
-            logger.info("✓ Data integrity validation passed")
+            logger.info(" Data integrity validation passed")
         else:
-            logger.warning("⚠ Data integrity issues detected")
+            logger.warning(" Data integrity issues detected")
 
         return is_valid
 
@@ -289,7 +289,7 @@ def train_and_predict(data_folder: Path, retrain_model: bool = False) -> tuple[d
     """
     logger = logging.getLogger(__name__)
 
-    logger.info("🤖 Initializing ML prediction system...")
+    logger.info(" Initializing ML prediction system...")
 
     try:
         predictor = UFCPredictor(data_folder)
@@ -298,7 +298,7 @@ def train_and_predict(data_folder: Path, retrain_model: bool = False) -> tuple[d
         should_train = retrain_model or not predictor.is_model_trained()
 
         if should_train:
-            logger.info("🔄 Training new ML model...")
+            logger.info(" Training new ML model...")
 
             # Load and preprocess data
             training_df, prediction_df = predictor.load_and_preprocess_data()
@@ -306,30 +306,30 @@ def train_and_predict(data_folder: Path, retrain_model: bool = False) -> tuple[d
             # Train model with hyperparameter optimization
             model_metrics = predictor.train_model(
                 training_df,
-                model_type="random_forest",  # Best for tabular data
+                model_type="xgboost",  # Best for sports prediction with anti-overfitting
                 optimize_hyperparameters=True,
                 test_size=0.2
             )
 
-            logger.info("✓ Model training completed")
+            logger.info(" Model training completed")
         else:
-            logger.info("📁 Loading existing trained model...")
+            logger.info(" Loading existing trained model...")
             if not predictor.load_model():
-                logger.info("🔄 Could not load model, training new one...")
+                logger.info(" Could not load model, training new one...")
                 training_df, prediction_df = predictor.load_and_preprocess_data()
                 model_metrics = predictor.train_model(
                     training_df,
-                    model_type="random_forest",
+                    model_type="xgboost",  # Best for sports prediction with anti-overfitting
                     optimize_hyperparameters=True
                 )
             else:
-                logger.info("✓ Existing model loaded successfully")
+                logger.info(" Existing model loaded successfully")
                 # Load data for predictions
                 _, prediction_df = predictor.load_and_preprocess_data()
                 model_metrics = predictor.get_model_info()
 
         # Make predictions for upcoming fights
-        logger.info("🔮 Making fight predictions...")
+        logger.info(" Making fight predictions...")
         predictions = predictor.predict_fights(prediction_df)
 
         # Add readable fight information
@@ -339,8 +339,8 @@ def train_and_predict(data_folder: Path, retrain_model: bool = False) -> tuple[d
         predictions_file = data_folder / "fight_predictions.csv"
         predictions.to_csv(predictions_file, index=False)
 
-        logger.info(f"✓ Predictions saved to {predictions_file}")
-        logger.info(f"🎯 Generated predictions for {len(predictions)} upcoming fights")
+        logger.info(f" Predictions saved to {predictions_file}")
+        logger.info(f" Generated predictions for {len(predictions)} upcoming fights")
 
         # Also save a readable summary
         readable_file = data_folder / "fight_predictions_summary.csv"
@@ -360,12 +360,12 @@ def train_and_predict(data_folder: Path, retrain_model: bool = False) -> tuple[d
                 readable_predictions = readable_predictions.sort_values('confidence', ascending=False)
 
             readable_predictions.to_csv(readable_file, index=False)
-            logger.info(f"✓ Readable predictions summary saved to {readable_file}")
+            logger.info(f" Readable predictions summary saved to {readable_file}")
 
         # Show top feature importance
         top_features = predictor.get_top_features(10)
         if top_features:
-            logger.info("🏆 Top 10 Most Important Features:")
+            logger.info(" Top 10 Most Important Features:")
             for i, (feature, importance) in enumerate(top_features, 1):
                 logger.info(f"  {i:2d}. {feature}: {importance:.3f}")
 
@@ -473,7 +473,7 @@ def main() -> None:
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    logger.info("🚀 Starting UFC Data Automation System")
+    logger.info(" Starting UFC Data Automation System")
     logger.info("=" * 50)
 
     # Configuration
@@ -524,11 +524,11 @@ def main() -> None:
 
         logger.info(f" Fight predictions: {len(predictions)} fights predicted")
         logger.info("=" * 50)
-        logger.info("🥊 FIGHT PREDICTIONS READY!")
+        logger.info(" FIGHT PREDICTIONS READY!")
 
         # Show some sample predictions
         if len(predictions) > 0:
-            logger.info("\n🔥 UPCOMING FIGHT PREDICTIONS:")
+            logger.info("\n UPCOMING FIGHT PREDICTIONS:")
             display_predictions = predictions.head(5)
             if 'confidence' in predictions.columns:
                 display_predictions = predictions.nlargest(5, 'confidence')
@@ -556,12 +556,12 @@ def main() -> None:
                 logger.info("")
 
         if not is_valid:
-            logger.warning("⚠ Please check data integrity issues")
+            logger.warning(" Please check data integrity issues")
 
         # Step 7: Launch web interface
         if not args.no_web:
             logger.info("")
-            logger.info("🌐 Step 7: Launching web interface...")
+            logger.info(" Step 7: Launching web interface...")
             logger.info("=" * 50)
 
             try:
@@ -573,12 +573,12 @@ def main() -> None:
                     debug=False
                 )
             except KeyboardInterrupt:
-                logger.info("\n✓ Web interface closed")
+                logger.info("\n Web interface closed")
             except Exception as e:
                 logger.error(f"Error launching web interface: {e}")
                 logger.warning("Continuing without web interface...")
         else:
-            logger.info("🌐 Step 7: Skipping web interface (--no-web flag)")
+            logger.info(" Step 7: Skipping web interface (--no-web flag)")
 
         if not is_valid:
             sys.exit(1)
