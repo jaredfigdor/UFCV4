@@ -1,0 +1,130 @@
+Loading training dataset...
+Dataset shape: (8440, 195)
+Columns: ['fight_id', 'event_date', 'fighter_1', 'fighter_2', 'event_id', 'winner', 'weight_class', 'title_fight', 'scheduled_rounds', 'gender_male', 'fighter_1_age', 'fighter_1_height_cm', 'fighter_1_weight_lbs', 'fighter_1_reach_cm', 'fighter_1_stance_orthodox', 'fighter_1_stance_southpaw', 'fighter_1_stance_switch', 'fighter_1_stance_open_stance', 'fighter_2_age', 'fighter_2_height_cm', 'fighter_2_weight_lbs', 'fighter_2_reach_cm', 'fighter_2_stance_orthodox', 'fighter_2_stance_southpaw', 'fighter_2_stance_switch', 'fighter_2_stance_open_stance', 'height_advantage', 'reach_advantage', 'age_advantage', 'fighter_1_wins', 'fighter_1_losses', 'fighter_1_draws', 'fighter_1_total_fights', 'fighter_1_win_percentage', 'fighter_2_wins', 'fighter_2_losses', 'fighter_2_draws', 'fighter_2_total_fights', 'fighter_2_win_percentage', 'experience_advantage', 'fighter_1_last_2_win_rate', 'fighter_1_last_2_finish_rate', 'fighter_1_last_2_avg_fight_time', 'fighter_1_last_3_win_rate', 'fighter_1_last_3_finish_rate', 'fighter_1_last_3_avg_fight_time', 'fighter_1_last_5_win_rate', 'fighter_1_last_5_finish_rate', 'fighter_1_last_5_avg_fight_time', 'fighter_1_avg_striking_accuracy', 'fighter_1_avg_takedown_accuracy', 'fighter_1_avg_control_time', 'fighter_1_avg_strikes_per_round', 'fighter_1_days_since_last_fight', 'fighter_2_last_2_win_rate', 'fighter_2_last_2_finish_rate', 'fighter_2_last_2_avg_fight_time', 'fighter_2_last_3_win_rate', 'fighter_2_last_3_finish_rate', 'fighter_2_last_3_avg_fight_time', 'fighter_2_last_5_win_rate', 'fighter_2_last_5_finish_rate', 'fighter_2_last_5_avg_fight_time', 'fighter_2_avg_striking_accuracy', 'fighter_2_avg_takedown_accuracy', 'fighter_2_avg_control_time', 'fighter_2_avg_strikes_per_round', 'fighter_2_days_since_last_fight', 'orthodox_vs_southpaw', 'fighter_1_win_streak', 'fighter_1_loss_streak', 'fighter_1_current_streak', 'fighter_1_momentum_score', 'fighter_1_recent_activity', 'fighter_1_fights_per_year', 'fighter_2_win_streak', 'fighter_2_loss_streak', 'fighter_2_current_streak', 'fighter_2_momentum_score', 'fighter_2_recent_activity', 'fighter_2_fights_per_year', 'fighter_1_ko_rate', 'fighter_1_submission_rate', 'fighter_1_decision_rate', 'fighter_1_first_round_finish_rate', 'fighter_1_late_finish_rate', 'fighter_1_average_fight_duration', 'fighter_1_takedown_success_rate', 'fighter_2_ko_rate', 'fighter_2_submission_rate', 'fighter_2_decision_rate', 'fighter_2_first_round_finish_rate', 'fighter_2_late_finish_rate', 'fighter_2_average_fight_duration', 'fighter_2_takedown_success_rate', 'fighter_1_fighting_age', 'fighter_1_peak_performance', 'fighter_1_age_vs_prime', 'fighter_1_past_prime', 'fighter_2_fighting_age', 'fighter_2_peak_performance', 'fighter_2_age_vs_prime', 'fighter_2_past_prime', 'southpaw_advantage', 'significant_height_advantage', 'significant_reach_advantage', 'major_experience_gap', 'win_rate_gap', 'record_quality_difference', 'fighter_1_avg_opponent_win_rate', 'fighter_1_vs_winning_record', 'fighter_1_vs_elite_opponents', 'fighter_1_strength_of_schedule', 'fighter_1_quality_wins', 'fighter_1_bad_losses', 'fighter_2_avg_opponent_win_rate', 'fighter_2_vs_winning_record', 'fighter_2_vs_elite_opponents', 'fighter_2_strength_of_schedule', 'fighter_2_quality_wins', 'fighter_2_bad_losses', 'fighter_1_striking_volume', 'fighter_1_grappling_volume', 'fighter_1_striker_score', 'fighter_1_pressure_score', 'fighter_1_finishing_ability', 'fighter_2_striking_volume', 'fighter_2_grappling_volume', 'fighter_2_striker_score', 'fighter_2_pressure_score', 'fighter_2_finishing_ability', 'style_mismatch_score', 'exploitable_mismatch', 'pressure_differential', 'finishing_ability_gap', 'fighter_1_elo_rating', 'fighter_1_elo_uncertainty', 'fighter_1_elo_peak', 'fighter_1_elo_trend', 'fighter_2_elo_rating', 'fighter_2_elo_uncertainty', 'fighter_2_elo_peak', 'fighter_2_elo_trend', 'elo_delta', 'elo_favorite', 'elo_uncertainty_sum', 'fighter_1_similar_opponent_win_rate', 'fighter_1_weighted_opponent_quality', 'fighter_1_style_specific_performance', 'fighter_2_similar_opponent_win_rate', 'fighter_2_weighted_opponent_quality', 'fighter_2_style_specific_performance', 'fighter_1_short_turnaround', 'fighter_1_layoff_category', 'fighter_1_ring_rust_penalty', 'fighter_2_short_turnaround', 'fighter_2_layoff_category', 'fighter_2_ring_rust_penalty', 'short_notice_fight', 'fighter_1_outcome_variance', 'fighter_1_performance_consistency', 'fighter_1_streak_pressure', 'fighter_1_finish_variance', 'fighter_2_outcome_variance', 'fighter_2_performance_consistency', 'fighter_2_streak_pressure', 'fighter_2_finish_variance', 'fighter_1_striking_differential', 'fighter_1_control_dominance', 'fighter_1_damage_efficiency', 'fighter_1_pace_score', 'fighter_2_striking_differential', 'fighter_2_control_dominance', 'fighter_2_damage_efficiency', 'fighter_2_pace_score', 'striking_differential_gap', 'control_dominance_gap', 'age_x_activity', 'experience_x_winrate', 'momentum_x_elo', 'fighter_1_streak_regression_risk', 'fighter_2_streak_regression_risk', 'fighter_1_age_x_rust', 'fighter_2_age_x_rust', 'fighter_1_recent_volatility', 'fighter_1_submission_threat', 'fighter_1_volume_x_finishing', 'fighter_2_submission_threat', 'fighter_2_volume_x_finishing', 'pressure_x_control', 'fighter_2_recent_volatility', 'height_x_td_defense', 'reach_x_striking_acc', 'dataset_type', 'created_at']
+
+================================================================================
+FEATURE ANALYSIS - Total features: 186
+================================================================================
+
+Numeric features only: 186
+C:\Users\jared\AppData\Local\Programs\Python\Python313\Lib\site-packages\numpy\lib\_function_base_impl.py:3045: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+C:\Users\jared\AppData\Local\Programs\Python\Python313\Lib\site-packages\numpy\lib\_function_base_impl.py:3046: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+
+TOP 30 FEATURES BY CORRELATION WITH WINNER:
+--------------------------------------------------------------------------------
+fighter_1_age_vs_prime                             | Correlation: 0.1892
+age_advantage                                      | Correlation: 0.1872
+fighter_1_age                                      | Correlation: 0.1717
+fighter_1_losses                                   | Correlation: 0.1597
+fighter_1_fighting_age                             | Correlation: 0.1525
+fighter_1_past_prime                               | Correlation: 0.1444
+fighter_1_elo_uncertainty                          | Correlation: 0.1278
+fighter_1_total_fights                             | Correlation: 0.1267
+striking_differential_gap                          | Correlation: 0.1249
+fighter_1_weighted_opponent_quality                | Correlation: 0.1175
+fighter_2_pressure_score                           | Correlation: 0.1155
+fighter_1_striking_differential                    | Correlation: 0.1101
+fighter_2_striking_volume                          | Correlation: 0.1094
+fighter_2_avg_strikes_per_round                    | Correlation: 0.1094
+fighter_2_pace_score                               | Correlation: 0.1073
+experience_advantage                               | Correlation: 0.1018
+elo_uncertainty_sum                                | Correlation: 0.0999
+fighter_1_last_5_win_rate                          | Correlation: 0.0982
+fighter_1_last_3_win_rate                          | Correlation: 0.0974
+fighter_1_loss_streak                              | Correlation: 0.0954
+fighter_1_wins                                     | Correlation: 0.0931
+pressure_differential                              | Correlation: 0.0928
+fighter_1_control_dominance                        | Correlation: 0.0925
+fighter_1_similar_opponent_win_rate                | Correlation: 0.0906
+fighter_1_weight_lbs                               | Correlation: 0.0897
+record_quality_difference                          | Correlation: 0.0870
+fighter_1_layoff_category                          | Correlation: 0.0864
+fighter_1_grappling_volume                         | Correlation: 0.0855
+fighter_1_avg_control_time                         | Correlation: 0.0848
+control_dominance_gap                              | Correlation: 0.0846
+
+================================================================================
+HIGHLY SUSPICIOUS FEATURES (correlation > 15%):
+================================================================================
+  fighter_1_age_vs_prime: 0.1892
+  age_advantage: 0.1872
+  fighter_1_age: 0.1717
+  fighter_1_losses: 0.1597
+  fighter_1_fighting_age: 0.1525
+
+================================================================================
+TRAINING SIMPLE MODEL TO CHECK FEATURE IMPORTANCE...
+================================================================================
+
+Simple model (max_depth=5) results:
+  Training accuracy: 0.6834
+  Test accuracy: 0.6611
+  Overfitting gap: 0.0222
+
+TOP 30 FEATURES BY IMPORTANCE (shallow tree):
+--------------------------------------------------------------------------------
+fighter_1_age_vs_prime                             | Importance: 0.0542
+age_advantage                                      | Importance: 0.0485
+striking_differential_gap                          | Importance: 0.0335
+fighter_1_losses                                   | Importance: 0.0304
+fighter_1_striking_differential                    | Importance: 0.0303
+fighter_1_similar_opponent_win_rate                | Importance: 0.0285
+fighter_1_age                                      | Importance: 0.0282
+fighter_2_reach_cm                                 | Importance: 0.0236
+fighter_1_weighted_opponent_quality                | Importance: 0.0230
+fighter_2_avg_strikes_per_round                    | Importance: 0.0224
+fighter_1_past_prime                               | Importance: 0.0179
+fighter_2_striking_volume                          | Importance: 0.0176
+fighter_2_pace_score                               | Importance: 0.0172
+fighter_1_fighting_age                             | Importance: 0.0160
+scheduled_rounds                                   | Importance: 0.0160
+fighter_1_control_dominance                        | Importance: 0.0154
+fighter_2_age                                      | Importance: 0.0141
+record_quality_difference                          | Importance: 0.0124
+fighter_1_elo_uncertainty                          | Importance: 0.0124
+reach_advantage                                    | Importance: 0.0123
+fighter_1_avg_striking_accuracy                    | Importance: 0.0118
+pressure_differential                              | Importance: 0.0112
+fighter_2_striking_differential                    | Importance: 0.0106
+fighter_1_outcome_variance                         | Importance: 0.0106
+fighter_1_win_percentage                           | Importance: 0.0098
+fighter_2_pressure_score                           | Importance: 0.0098
+fighter_1_style_specific_performance               | Importance: 0.0093
+fighter_1_takedown_success_rate                    | Importance: 0.0090
+fighter_2_age_vs_prime                             | Importance: 0.0089
+fighter_1_avg_opponent_win_rate                    | Importance: 0.0087
+
+================================================================================
+CHECKING FOR SUSPICIOUS FEATURE PATTERNS...
+================================================================================
+
+
+Features containing 'total' (2):
+  - fighter_1_total_fights
+  - fighter_2_total_fights
+
+================================================================================
+CHECKING FOR LOW-VARIANCE FEATURES...
+================================================================================
+
+Found 11 features with variance < 0.01:
+  fighter_2_draws: variance = 0.000000
+  fighter_1_draws: variance = 0.000000
+  short_notice_fight: variance = 0.000000
+  fighter_2_stance_open_stance: variance = 0.001065
+  fighter_1_stance_open_stance: variance = 0.001774
+  fighter_2_performance_consistency: variance = 0.007254
+  fighter_2_recent_volatility: variance = 0.007639
+  fighter_1_performance_consistency: variance = 0.007804
+  fighter_2_avg_striking_accuracy: variance = 0.009684
+  fighter_1_avg_striking_accuracy: variance = 0.009767
+  fighter_1_recent_volatility: variance = 0.009827
+
+================================================================================
+Reports saved:
+  - ufc_data/feature_correlations.csv
+  - ufc_data/feature_importances.csv
+================================================================================
+
