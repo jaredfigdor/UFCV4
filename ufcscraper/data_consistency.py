@@ -96,20 +96,22 @@ class DataConsistencyManager:
 
         today = date.today()
 
-        # Check completed events for future events that should be moved to upcoming
+        # Check completed events for future/today events that should be moved to upcoming
+        # Events dated today or later are considered upcoming (events happen throughout the day)
         if not completed_events.empty and 'event_date' in completed_events.columns:
             future_events_in_completed = completed_events[
-                pd.to_datetime(completed_events['event_date']).dt.date > today
+                pd.to_datetime(completed_events['event_date']).dt.date >= today
             ]
 
             if not future_events_in_completed.empty:
-                logger.info(f"Found {len(future_events_in_completed)} future events in completed data")
+                logger.info(f"Found {len(future_events_in_completed)} future/today events in completed data")
                 self._move_events_to_upcoming(future_events_in_completed)
 
         # Check upcoming events for past events that should be moved to completed
+        # Only events from yesterday or earlier are considered completed
         if not upcoming_events.empty and 'event_date' in upcoming_events.columns:
             past_events_in_upcoming = upcoming_events[
-                pd.to_datetime(upcoming_events['event_date']).dt.date <= today
+                pd.to_datetime(upcoming_events['event_date']).dt.date < today
             ]
 
             if not past_events_in_upcoming.empty:
@@ -133,9 +135,12 @@ class DataConsistencyManager:
             else:
                 events_to_move.to_csv(self.upcoming_events_file, index=False, encoding='utf-8')
 
+            # CRITICAL: Also move the associated fight data back to upcoming
+            event_ids = set(events_to_move['event_id'])
+            self._move_fights_to_upcoming(event_ids)
+
             # Remove from completed events file
-            event_ids_to_remove = set(events_to_move['event_id'])
-            self._remove_events_from_file(self.completed_events_file, event_ids_to_remove, "events")
+            self._remove_events_from_file(self.completed_events_file, event_ids, "events")
 
     def _move_events_to_completed(self, events_to_move: pd.DataFrame) -> None:
         """Move events from upcoming to completed files.
@@ -143,20 +148,45 @@ class DataConsistencyManager:
         Args:
             events_to_move: DataFrame of events to move.
         """
-        # Add to completed events file
+        if events_to_move.empty:
+            return
+
+        # Load existing completed events to check for duplicates
+        try:
+            existing_completed = pd.read_csv(self.completed_events_file, encoding='utf-8')
+            existing_event_ids = set(existing_completed['event_id'].tolist())
+        except:
+            existing_event_ids = set()
+
+        # Filter out events that are already in completed
+        events_to_actually_move = events_to_move[
+            ~events_to_move['event_id'].isin(existing_event_ids)
+        ]
+
+        # Log all events (whether moving or already completed)
         for _, event in events_to_move.iterrows():
-            logger.info(f"Moving past event '{event['event_name']}' ({event['event_date']}) to completed")
-
-        # Append to completed events file
-        if not events_to_move.empty:
-            if self.completed_events_file.exists():
-                events_to_move.to_csv(self.completed_events_file, mode='a', header=False, index=False, encoding='utf-8')
+            if event['event_id'] in existing_event_ids:
+                logger.info(f"Event '{event['event_name']}' already in completed (likely scraped)")
             else:
-                events_to_move.to_csv(self.completed_events_file, index=False, encoding='utf-8')
+                logger.info(f"Moving past event '{event['event_name']}' ({event['event_date']}) to completed")
 
-            # Remove from upcoming events file
-            event_ids_to_remove = set(events_to_move['event_id'])
-            self._remove_events_from_file(self.upcoming_events_file, event_ids_to_remove, "events")
+        # Only append events that aren't already there
+        if not events_to_actually_move.empty:
+            if self.completed_events_file.exists():
+                events_to_actually_move.to_csv(self.completed_events_file, mode='a', header=False, index=False, encoding='utf-8')
+            else:
+                events_to_actually_move.to_csv(self.completed_events_file, index=False, encoding='utf-8')
+
+        # NOTE: We do NOT move upcoming fights to completed because they have different schemas
+        # Upcoming fights: 6 columns (no results yet)
+        # Completed fights: 17 columns (with results, referee, etc.)
+        # Instead, the upcoming fights will be DELETED and the completed fights will be
+        # RE-SCRAPED from UFCStats.com with full results data
+
+        event_ids = set(events_to_move['event_id'])
+
+        # Remove from upcoming events file (and their associated incomplete fights)
+        self._remove_events_from_file(self.upcoming_events_file, event_ids, "events")
 
     def _load_events(self, file_path: Path) -> pd.DataFrame:
         """Load event data from CSV file.
@@ -223,19 +253,27 @@ class DataConsistencyManager:
             logger.debug(f"Event migrated: {event_id}")
 
     def _migrate_fights(self, event_ids: Set[str]) -> None:
-        """Migrate fight data from upcoming to completed (already done by scraper).
+        """Migrate fight data from upcoming to completed (legacy method - now delegates).
 
-        Since the scraper already adds completed fights to the completed file,
-        we just need to log this operation.
+        This method now delegates to _move_fights_to_completed for actual migration.
 
         Args:
-            event_ids: Set of event IDs whose fights have been migrated.
+            event_ids: Set of event IDs whose fights should be migrated.
+        """
+        self._move_fights_to_completed(event_ids)
+
+    def _move_fights_to_completed(self, event_ids: Set[str]) -> None:
+        """Move fight data from upcoming to completed files.
+
+        Args:
+            event_ids: Set of event IDs whose fights should be moved.
         """
         if not self.upcoming_fights_file.exists():
+            logger.debug("No upcoming fights file to migrate from")
             return
 
         try:
-            # Try different encodings to handle Unicode issues
+            # Load upcoming fights with encoding fallback
             for encoding in ['utf-8', 'utf-8-sig', 'latin1', 'cp1252']:
                 try:
                     upcoming_fights = pd.read_csv(self.upcoming_fights_file, encoding=encoding)
@@ -244,18 +282,76 @@ class DataConsistencyManager:
                     continue
             else:
                 upcoming_fights = pd.read_csv(self.upcoming_fights_file, encoding='utf-8', encoding_errors='replace')
+
             if 'event_id' not in upcoming_fights.columns:
+                logger.warning("No event_id column in upcoming fights")
                 return
 
-            # Count fights that would be migrated
+            # Find fights to migrate
             fights_to_migrate = upcoming_fights[upcoming_fights['event_id'].isin(event_ids)]
-            fight_count = len(fights_to_migrate)
 
-            if fight_count > 0:
-                logger.info(f"Fights already migrated to completed by scraper: {fight_count} fights")
+            if len(fights_to_migrate) == 0:
+                logger.info(f"No fights found in upcoming data for {len(event_ids)} events")
+                return
+
+            # Append to completed fights file
+            if self.completed_fights_file.exists():
+                fights_to_migrate.to_csv(self.completed_fights_file, mode='a', header=False, index=False, encoding='utf-8')
+            else:
+                fights_to_migrate.to_csv(self.completed_fights_file, index=False, encoding='utf-8')
+
+            logger.info(f"Moved {len(fights_to_migrate)} fights to completed data")
+
+            # Remove from upcoming fights file (will be done by _remove_completed_events_from_upcoming)
 
         except Exception as e:
-            logger.error(f"Error checking upcoming fights for migration: {e}")
+            logger.error(f"Error moving fights to completed: {e}")
+
+    def _move_fights_to_upcoming(self, event_ids: Set[str]) -> None:
+        """Move fight data from completed to upcoming files.
+
+        Args:
+            event_ids: Set of event IDs whose fights should be moved back to upcoming.
+        """
+        if not self.completed_fights_file.exists():
+            logger.debug("No completed fights file to move from")
+            return
+
+        try:
+            # Load completed fights with encoding fallback
+            for encoding in ['utf-8', 'utf-8-sig', 'latin1', 'cp1252']:
+                try:
+                    completed_fights = pd.read_csv(self.completed_fights_file, encoding=encoding)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            else:
+                completed_fights = pd.read_csv(self.completed_fights_file, encoding='utf-8', encoding_errors='replace')
+
+            if 'event_id' not in completed_fights.columns:
+                logger.warning("No event_id column in completed fights")
+                return
+
+            # Find fights to move back
+            fights_to_move = completed_fights[completed_fights['event_id'].isin(event_ids)]
+
+            if len(fights_to_move) == 0:
+                logger.info(f"No fights found in completed data for {len(event_ids)} events to move to upcoming")
+                return
+
+            # Append to upcoming fights file
+            if self.upcoming_fights_file.exists():
+                fights_to_move.to_csv(self.upcoming_fights_file, mode='a', header=False, index=False, encoding='utf-8')
+            else:
+                fights_to_move.to_csv(self.upcoming_fights_file, index=False, encoding='utf-8')
+
+            logger.info(f"Moved {len(fights_to_move)} fights back to upcoming data")
+
+            # Remove from completed fights file
+            self._remove_events_from_file(self.completed_fights_file, event_ids, "fights")
+
+        except Exception as e:
+            logger.error(f"Error moving fights to upcoming: {e}")
 
     def _remove_completed_events_from_upcoming(self, event_ids: Set[str]) -> None:
         """Remove completed events from upcoming event and fight files.

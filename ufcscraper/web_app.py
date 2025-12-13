@@ -151,11 +151,24 @@ def load_fight_details(fight_id: str) -> Optional[Dict[str, Any]]:
         except Exception as e:
             logger.warning(f"Could not load advanced features: {e}")
 
+    # Load SHAP values for this fight
+    shap_data = []
+    shap_file = data_folder / "fight_shap_values.csv"
+    if shap_file.exists():
+        try:
+            shap_df = pd.read_csv(shap_file, encoding='utf-8')
+            fight_shap = shap_df[shap_df['fight_id'] == fight_id]
+            if not fight_shap.empty:
+                shap_data = fight_shap.to_dict('records')
+        except Exception as e:
+            logger.warning(f"Could not load SHAP values: {e}")
+
     result = {
         'fight': fight.to_dict(),
         'fighter_1': fighter1_data.iloc[0].to_dict() if not fighter1_data.empty else {},
         'fighter_2': fighter2_data.iloc[0].to_dict() if not fighter2_data.empty else {},
-        'advanced_features': advanced_features
+        'advanced_features': advanced_features,
+        'shap_values': shap_data
     }
 
     return result
@@ -276,13 +289,18 @@ def fight_detail(fight_id: str):
     # Create comparison charts
     charts = create_fight_comparison_charts(fight_data)
 
+    # Create SHAP analysis chart if available
+    if fight_data.get('shap_values'):
+        charts['shap_waterfall'] = create_shap_waterfall_chart(fight_data)
+
     return render_template(
         'fight_detail.html',
         fight=fight_data['fight'],
         fighter_1=fight_data['fighter_1'],
         fighter_2=fight_data['fighter_2'],
         advanced_features=fight_data['advanced_features'],
-        charts=charts
+        charts=charts,
+        shap_data=fight_data.get('shap_values', [])
     )
 
 
@@ -421,6 +439,66 @@ def create_fight_comparison_charts(fight_data: Dict[str, Any]) -> Dict[str, str]
         charts['win_probability'] = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
     return charts
+
+
+def create_shap_waterfall_chart(fight_data: Dict[str, Any]) -> str:
+    """Create SHAP waterfall chart showing feature contributions."""
+    shap_values = fight_data.get('shap_values', [])
+
+    if not shap_values:
+        return None
+
+    # Extract features and values (sorted by absolute SHAP value)
+    features = [item['feature'] for item in shap_values[:15]]
+    shap_vals = [item['shap_value'] for item in shap_values[:15]]
+    base_value = shap_values[0].get('base_value', 0.5) if shap_values else 0.5
+
+    # Create color coding (red = pushes toward fighter_1, blue = pushes toward fighter_2)
+    colors = ['#D20A0A' if val > 0 else '#1f77b4' for val in shap_vals]
+
+    # Format feature names (clean up for display)
+    formatted_features = [feat.replace('_', ' ').title() for feat in features]
+
+    # Create horizontal bar chart
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(
+        y=formatted_features,
+        x=shap_vals,
+        orientation='h',
+        marker=dict(color=colors),
+        text=[f"{val:+.3f}" for val in shap_vals],
+        textposition='outside',
+        hovertemplate='<b>%{y}</b><br>SHAP Value: %{x:.3f}<extra></extra>'
+    ))
+
+    fight = fight_data['fight']
+    fighter1_name = fight_data['fighter_1'].get('full_name', 'Fighter 1')
+    fighter2_name = fight_data['fighter_2'].get('full_name', 'Fighter 2')
+
+    fig.update_layout(
+        title=f'Prediction Explanation (Base Value: {base_value:.3f})',
+        xaxis_title='Impact on Prediction',
+        yaxis_title='Feature',
+        height=600,
+        yaxis={'categoryorder': 'total ascending'},
+        template='plotly_white',
+        annotations=[
+            dict(
+                x=0.02, y=0.98,
+                xref='paper', yref='paper',
+                text=f'<b>Red</b> = Favors {fighter1_name}<br><b>Blue</b> = Favors {fighter2_name}',
+                showarrow=False,
+                bgcolor='white',
+                bordercolor='#ccc',
+                borderwidth=1,
+                xanchor='left',
+                yanchor='top'
+            )
+        ]
+    )
+
+    return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 
 @app.route('/api/predictions')

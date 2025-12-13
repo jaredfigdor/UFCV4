@@ -119,6 +119,11 @@ def scrape_new_data(data_folder: Path, scrape_upcoming: bool, scrape_completed: 
             logger.info("Scraping upcoming fights...")
             scraper.upcoming_fight_scraper.scrape_fights()
 
+            # CRITICAL: Update fighter data after scraping upcoming fights
+            # Upcoming fights may have new fighters not yet in fighter_data.csv
+            logger.info("Updating fighter data for upcoming fights...")
+            scraper.fighter_scraper.scrape_fighters()
+
             logger.info(" Upcoming data scraping completed")
         except Exception as e:
             logger.error(f"Error scraping upcoming data: {e}")
@@ -145,12 +150,12 @@ def scrape_new_data(data_folder: Path, scrape_upcoming: bool, scrape_completed: 
             raise
 
 
-def move_completed_events(data_folder: Path) -> int:
+def move_completed_events(data_folder: Path) -> tuple[int, list[str]]:
     """
     Move events from upcoming to completed if they finished more than 1 day ago.
 
     Returns:
-        Number of events moved
+        Tuple of (number of events moved, list of event IDs that were moved)
     """
     logger = logging.getLogger(__name__)
 
@@ -159,18 +164,18 @@ def move_completed_events(data_folder: Path) -> int:
 
     if not upcoming_events_file.exists():
         logger.info("No upcoming events file found")
-        return 0
+        return 0, []
 
     try:
         upcoming_events = pd.read_csv(upcoming_events_file)
         upcoming_fights = pd.read_csv(upcoming_fights_file) if upcoming_fights_file.exists() else pd.DataFrame()
     except Exception as e:
         logger.error(f"Error loading upcoming data: {e}")
-        return 0
+        return 0, []
 
     if len(upcoming_events) == 0:
         logger.info("No upcoming events to check")
-        return 0
+        return 0, []
 
     # Find events that are now completed (event date + 1 day < today)
     today = datetime.now().date()
@@ -182,35 +187,100 @@ def move_completed_events(data_folder: Path) -> int:
 
     if len(completed_events) == 0:
         logger.info("No events ready to move to completed")
-        return 0
+        return 0, []
 
     logger.info(f"Found {len(completed_events)} events to move to completed:")
+    moved_event_ids = []
     for _, event in completed_events.iterrows():
         logger.info(f"  - {event['event_name']} ({event['event_date']})")
+        moved_event_ids.append(event['event_id'])
 
     # Initialize data consistency manager to handle the move
     consistency_manager = DataConsistencyManager(data_folder)
-
-    # Move events (this will handle both events and associated fights)
-    moved_count = 0
-    for _, event in completed_events.iterrows():
-        try:
-            # The consistency manager will handle moving the event and its fights
-            logger.info(f"Moving event: {event['event_name']}")
-            moved_count += 1
-        except Exception as e:
-            logger.error(f"Error moving event {event['event_name']}: {e}")
 
     # Run the full consistency management to properly move events
     try:
         logger.info("Running data consistency management...")
         consistency_manager.manage_event_consistency()
-        logger.info(f" Successfully moved {moved_count} events to completed data")
+        logger.info(f" Successfully moved {len(moved_event_ids)} events to completed data")
+        logger.info(f" Events will now be re-scraped to get complete fight results")
     except Exception as e:
         logger.error(f"Error in consistency management: {e}")
-        moved_count = 0
+        moved_event_ids = []
 
-    return moved_count
+    return len(moved_event_ids), moved_event_ids
+
+
+def scrape_completed_event_fights(data_folder: Path, event_ids: list[str]) -> None:
+    """
+    Scrape fight data for specific completed events.
+
+    This is called after events are moved from upcoming to completed to get
+    the full fight results (17 columns) from UFCStats.com.
+
+    Args:
+        data_folder: Path to data folder
+        event_ids: List of event IDs to scrape fights for
+    """
+    logger = logging.getLogger(__name__)
+
+    if not event_ids:
+        return
+
+    logger.info(f" Scraping complete fight data for {len(event_ids)} newly completed events...")
+
+    try:
+        # Initialize scraper
+        scraper = UFCScraper(
+            data_folder=data_folder,
+            n_sessions=1,  # Single session for Windows compatibility
+            delay=0.5
+        )
+
+        # Get event URLs for the specific events
+        from ufcscraper.event_scraper import EventScraper
+        event_urls = [EventScraper.url_from_id(event_id) for event_id in event_ids]
+
+        # Get fight URLs from these specific events
+        fight_urls = scraper.event_scraper.get_fight_urls_from_event_urls(event_urls)
+        logger.info(f"Found {len(fight_urls)} fights to scrape for these events")
+
+        # Filter to only fights we don't already have
+        existing_fight_ids = set(scraper.fight_scraper.data['fight_id'].tolist())
+        existing_urls = set(map(scraper.fight_scraper.url_from_id, existing_fight_ids))
+        urls_to_scrape = set(fight_urls) - existing_urls
+
+        if len(urls_to_scrape) == 0:
+            logger.info(" All fights for these events already scraped")
+            return
+
+        logger.info(f" Scraping {len(urls_to_scrape)} new fights with complete results...")
+
+        # Scrape the fights (this will get all 17 columns with results)
+        import csv
+        from ufcscraper.utils import links_to_soups
+        from ufcscraper.fight_scraper import RoundsHandler
+
+        rounds_handler = RoundsHandler(data_folder)
+
+        with open(scraper.fight_scraper.data_file, "a", encoding='utf-8') as f_fights:
+            writer = csv.writer(f_fights)
+            for i, (url, soup) in enumerate(
+                links_to_soups(list(urls_to_scrape), 1, 0.5)
+            ):
+                scraper.fight_scraper.scrape_fight(writer, rounds_handler, url, soup)
+                if (i + 1) % 5 == 0:
+                    logger.info(f"Scraped {i+1}/{len(urls_to_scrape)} fights...")
+
+        logger.info(f" Successfully scraped {len(urls_to_scrape)} fights with complete results")
+
+        # Update fighter data for any new fighters in these fights
+        logger.info(" Updating fighter data...")
+        scraper.fighter_scraper.scrape_fighters()
+
+    except Exception as e:
+        logger.error(f"Error scraping completed event fights: {e}")
+        raise
 
 
 def build_updated_datasets(data_folder: Path, force_rebuild: bool = False) -> tuple[int, int]:
@@ -428,14 +498,21 @@ def _enhance_predictions_with_context(predictions: pd.DataFrame, data_folder: Pa
                 enhanced['event_name'] = enhanced['event_id'].map(lambda x: event_data.get(x, ('Unknown Event', ''))[0])
                 enhanced['event_date'] = enhanced['event_id'].map(lambda x: event_data.get(x, ('', 'Unknown Date'))[1])
 
-        # Clean up weight class names
+        # Clean up weight class names (must match encoding in feature_engineering.py)
         if 'weight_class' in enhanced.columns:
+            # Reverse mapping from numeric encoding
+            # NOTE: These are encoded without gender - gender is inferred from fighters
             weight_class_map = {
-                0.0: 'Women\'s Strawweight', 1.0: 'Men\'s Flyweight', 2.0: 'Women\'s Flyweight',
-                3.0: 'Men\'s Bantamweight', 4.0: 'Women\'s Bantamweight', 5.0: 'Men\'s Featherweight',
-                6.0: 'Women\'s Featherweight', 7.0: 'Men\'s Lightweight', 8.0: 'Women\'s Lightweight',
-                9.0: 'Men\'s Welterweight', 10.0: 'Men\'s Middleweight', 11.0: 'Men\'s Light Heavyweight',
-                12.0: 'Men\'s Heavyweight', 13.0: 'Catch Weight'
+                1.0: 'Flyweight',
+                2.0: 'Bantamweight',
+                3.0: 'Featherweight',
+                4.0: 'Lightweight',
+                4.5: 'Catch Weight',
+                5.0: 'Welterweight',
+                6.0: 'Middleweight',
+                7.0: 'Light Heavyweight',
+                8.0: 'Heavyweight',
+                8.5: 'Open Weight',
             }
             enhanced['weight_class_name'] = enhanced['weight_class'].map(weight_class_map).fillna('Unknown')
 
@@ -494,12 +571,15 @@ def main() -> None:
 
         # Step 3: Move completed events
         logger.info(" Step 3: Moving completed events...")
-        moved_events = move_completed_events(data_folder)
+        moved_events_count, _ = move_completed_events(data_folder)
+
+        # Note: No need for Step 3.5 to scrape completed fights
+        # Step 2's completed scraper already handles events that moved from upcoming to completed
 
         # Step 4: Build updated ML datasets
         logger.info(" Step 4: Building ML datasets...")
         # Force rebuild if we moved events, scraped new data, or user requested it
-        force_rebuild = (needs_upcoming or needs_completed or moved_events > 0 or args.force_rebuild)
+        force_rebuild = (needs_upcoming or needs_completed or moved_events_count > 0 or args.force_rebuild)
         training_count, prediction_count = build_updated_datasets(data_folder, force_rebuild=force_rebuild)
 
         # Step 5: Validate data integrity
@@ -515,7 +595,7 @@ def main() -> None:
         logger.info(" UFC AUTOMATION & PREDICTION SYSTEM COMPLETED!")
         logger.info(f" Training fights: {training_count:,}")
         logger.info(f" Upcoming fights: {prediction_count}")
-        logger.info(f" Events moved: {moved_events}")
+        logger.info(f" Events moved: {moved_events_count}")
         logger.info(f" Data integrity: {'PASSED' if is_valid else 'ISSUES DETECTED'}")
 
         if isinstance(model_metrics, dict):

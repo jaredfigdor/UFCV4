@@ -1,31 +1,29 @@
 fight_id,event_name,event_date,fighter_1_name,fighter_2_name,predicted_winner_name,confidence,fighter_1_win_probability,fighter_2_win_probability,weight_class_name
-5f5b626e67529056,UFC Fight Night,2025-11-22,Arman Tsarukyan 'Ahalkalakets',Dan Hooker 'The Hangman',Arman Tsarukyan 'Ahalkalakets',0.816166,0.816166,0.18383402,Men's Bantamweight
-9bbdc2a2ab334541,UFC 322: Della Maddalena vs. Makhachev,2025-11-15,Kyle Daukaus,Gerald Meerschaert 'GM3',Kyle Daukaus,0.7601359,0.7601359,0.23986411,Men's Featherweight
-335064c3380e2f10,UFC Fight Night,2025-11-22,Ismail Naurdiev,Ryan Loder 'Man of Steel',Ismail Naurdiev,0.7571206,0.7571206,0.24287939,Men's Featherweight
-c037cf1f7b429d5e,UFC 322: Della Maddalena vs. Makhachev,2025-11-15,Baisangur Susurkaev 'Hunter',Eric McConico,Baisangur Susurkaev 'Hunter',0.7543509,0.7543509,0.2456491,Men's Featherweight
-6d6ab10cbaa45e8c,UFC 323: Dvalishvili vs. Yan 2,2025-12-06,Jan Blachowicz,Bogdan Guskov 'Czarevitch',Bogdan Guskov 'Czarevitch',0.737759,0.26224098,0.737759,Women's Featherweight
-f5564a9eeebd4ea0,UFC Fight Night,2025-11-22,Abdul Rakhman Yakhyaev 'Hunter',Rafael Cerqueira 'The Lion',Abdul Rakhman Yakhyaev 'Hunter',0.71070784,0.71070784,0.28929216,Women's Featherweight
-fbbb9e72900b71f5,UFC 323: Dvalishvili vs. Yan 2,2025-12-06,Brandon Moreno 'The Assassin Baby',Tatsuro Taira,Tatsuro Taira,0.68168116,0.31831884,0.68168116,Women's Strawweight
-b2218930b982d9b6,UFC Fight Night,2025-11-22,Belal Muhammad 'Remember the Name',Ian Machado Garry 'The Future',Ian Machado Garry 'The Future',0.65362877,0.34637123,0.65362877,Women's Bantamweight
-10a57b983e59f727,UFC 323: Dvalishvili vs. Yan 2,2025-12-06,Nazim Sadykhov 'Black Wolf',Fares Ziam 'Smile Killer',Fares Ziam 'Smile Killer',0.63884646,0.36115354,0.63884646,Men's Bantamweight
-443f30a4a856584a,UFC Fight Night,2025-11-22,Alex Perez,Asu Almabayev 'Zulfikar',Asu Almabayev 'Zulfikar',0.63583636,0.36416364,0.63583636,Women's Strawweight
-6f0231915cc28507,UFC Fight Night,2025-11-22,Bekzat Almakhan 'The Turan Warrior',Aleksandre Topuria 'El Conquistador',Bekzat Almakhan 'The Turan Warrior',0.6299287,0.6299287,0.3700713,Men's Flyweight
-8ed609d80e135d94,UFC Fight Night,2025-11-22,Jack Hermansson 'The Joker',Myktybek Orolbai,Myktybek Orolbai,0.62875235,0.37124765,0.62875235,Women's Bantamweight
-1dc29f4c6fcdd356,UFC 323: Dvalishvili vs. Yan 2,2025-12-06,Henry Cejudo 'Triple C',Payton Talbott,Payton Talbott,0.6074033,0.39259672,0.6074033,Men's Flyweight
-909cd8633507a0c8,UFC 322: Della Maddalena vs. Makhachev,2025-11-15,Erin Blanchfield 'Cold Blooded',Tracy Cortez,Erin Blanchfield 'Cold Blooded',0.5996556,0.5996556,0.40034437,Women's Bantamweight
-9b5f190cd3f5ce16,UFC 322: Della Maddalena vs. Makhachev,2025-11-15,Beneil Dariush,Benoit Saint Denis 'God of War',Benoit Saint Denis 'God of War',0.5953785,0.40462148,0.5953785,Men's Bantamweight
-74b551527f8e4c16,UFC Fight Night,2025-11-22,Felipe Lima 'Jungle Boy',Daniel Marcos 'Soncora',Daniel Marcos 'Soncora',0.5881285,0.4118715,0.5881285,Men's Flyweight
-a5a81a39ccf9b680,UFC Fight Night: Royval vs. Kape,2025-12-13,Brandon Royval 'Raw Dawg',Manel Kape 'StarBoy',Manel Kape 'StarBoy',0.58662784,0.4133722,0.58662784,Women's Strawweight
-6c2c6a6e3f4d04db,UFC 322: Della Maddalena vs. Makhachev,2025-11-15,Angela Hill 'Overkill',Fatima Kline 'The Archangel',Fatima Kline 'The Archangel',0.58460104,0.41539896,0.58460104,Women's Bantamweight
-856f6ee049373843,UFC 322: Della Maddalena vs. Makhachev,2025-11-15,Jack Della Maddalena,Islam Makhachev,Jack Della Maddalena,0.58221525,0.58221525,0.41778475,Women's Bantamweight
-292b83afa418635f,UFC 322: Della Maddalena vs. Makhachev,2025-11-15,Bo Nickal,Rodolfo Vieira,Bo Nickal,0.56427485,0.56427485,0.43572515,Men's Featherweight
-870d374f8d9af65a,UFC Fight Night,2025-11-22,Volkan Oezdemir 'No Time',Alonzo Menifield 'Atomic',Volkan Oezdemir 'No Time',0.5583733,0.5583733,0.44162673,Women's Featherweight
-00ee51bba08b7a08,UFC Fight Night,2025-11-22,Tagir Ulanbekov,Kyoji Horiguchi,Tagir Ulanbekov,0.5566053,0.5566053,0.44339472,Women's Strawweight
-7606f6b6c19f2d73,UFC 322: Della Maddalena vs. Makhachev,2025-11-15,Valentina Shevchenko 'Bullet',Zhang Weili 'Magnum',Zhang Weili 'Magnum',0.54876316,0.4512368,0.54876316,Women's Bantamweight
-477af74ea3cbba8b,UFC 322: Della Maddalena vs. Makhachev,2025-11-15,Sean Brady,Michael Morales,Michael Morales,0.5401958,0.45980415,0.5401958,Women's Bantamweight
-ebb012c5f3fd0cbb,UFC 322: Della Maddalena vs. Makhachev,2025-11-15,Roman Kopylov,Gregory Rodrigues 'Robocop',Gregory Rodrigues 'Robocop',0.53033864,0.46966133,0.53033864,Men's Featherweight
-3c60884853766487,UFC 322: Della Maddalena vs. Makhachev,2025-11-15,Leon Edwards 'Rocky',Carlos Prates 'The Nightmare',Leon Edwards 'Rocky',0.5286254,0.5286254,0.47137457,Women's Bantamweight
-a839b186d58f9780,UFC Fight Night,2025-11-22,Serghei Spivac 'Polar Bear',Shamil Gaziev,Shamil Gaziev,0.5172841,0.4827159,0.5172841,Men's Lightweight
-4a0db214d9721d6e,UFC 323: Dvalishvili vs. Yan 2,2025-12-06,Merab Dvalishvili 'The Machine',Petr Yan 'No Mercy',Merab Dvalishvili 'The Machine',0.51537246,0.51537246,0.48462754,Men's Flyweight
-dfa692db6d39330c,UFC 323: Dvalishvili vs. Yan 2,2025-12-06,Alexandre Pantoja 'The Cannibal',Joshua Van 'The Fearless',Joshua Van 'The Fearless',0.51454175,0.48545825,0.51454175,Women's Strawweight
-5e6a74db89f5410c,UFC Fight Night,2025-11-22,Bogdan Grad 'The Unleashed',Luke Riley,Luke Riley,0.5019314,0.4980686,0.5019314,Women's Flyweight
+a2523a8565fe4361,UFC Fight Night: Royval vs. Kape,2025-12-13,Sean Sharaf 'The Smoke',Steven Asplund 'Concrete',Steven Asplund 'Concrete',0.76176924,0.23823075,0.76176924,Light Heavyweight
+8fea32ab0445859c,UFC Fight Night,2026-02-07,Michal Oleksiejczuk 'Hussar',Marc-Andre Barriault 'Powerbar',Michal Oleksiejczuk 'Hussar',0.7498495,0.7498495,0.2501505,Welterweight
+f8e0bc0314bc98f8,UFC Fight Night: Royval vs. Kape,2025-12-13,Joanderson Brito 'Tubarao',Melsik Baghdasaryan 'The Gun',Joanderson Brito 'Tubarao',0.74540263,0.74540263,0.25459737,Flyweight
+a7ae8f6eb5fc3a79,UFC 325: Volkanovski vs. Lopes 2,2026-01-31,Dan Hooker 'The Hangman',Benoit Saint Denis 'God of War',Benoit Saint Denis 'God of War',0.74161637,0.25838366,0.74161637,Bantamweight
+8d740c844353ae0e,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Sean Strickland,Anthony Hernandez 'Fluffy',Anthony Hernandez 'Fluffy',0.7216296,0.27837035,0.7216296,Welterweight
+47149f3187661509,UFC Fight Night: Royval vs. Kape,2025-12-13,Kennedy Nzechukwu 'Chosen',Marcus Buchecha,Kennedy Nzechukwu 'Chosen',0.689543,0.689543,0.310457,Light Heavyweight
+47362cae6ba0e077,UFC 325: Volkanovski vs. Lopes 2,2026-01-31,Cam Rowston,Cody Brundage,Cam Rowston,0.6751,0.6751,0.32489997,Welterweight
+d000cb692343cdcd,UFC Fight Night: Royval vs. Kape,2025-12-13,Cesar Almeida 'Cesinha',Cezary Oleksiejczuk,Cezary Oleksiejczuk,0.66239715,0.33760282,0.66239715,Welterweight
+a5a81a39ccf9b680,UFC Fight Night: Royval vs. Kape,2025-12-13,Brandon Royval 'Raw Dawg',Manel Kape 'StarBoy',Manel Kape 'StarBoy',0.65941644,0.3405836,0.65941644,Unknown
+1e9004faf887eb82,UFC Fight Night: Royval vs. Kape,2025-12-13,Amanda Lemos,Gillian Robertson 'The Savage',Gillian Robertson 'The Savage',0.65122855,0.34877148,0.65122855,Lightweight
+4c1e7e1765a5438a,UFC 325: Volkanovski vs. Lopes 2,2026-01-31,Kaan Ofli 'Genghis',Yizha,Yizha,0.64905524,0.3509448,0.64905524,Flyweight
+24bb03f0a3415fbe,UFC Fight Night: Royval vs. Kape,2025-12-13,Giga Chikadze 'Ninja',Kevin Vallejos 'El Chino',Kevin Vallejos 'El Chino',0.6413765,0.35862353,0.6413765,Flyweight
+d94f1b32a81e3fa1,UFC 325: Volkanovski vs. Lopes 2,2026-01-31,Junior Tafa 'The Juggernaut',Billy Elekana 'Son of Susie',Billy Elekana 'Son of Susie',0.6294332,0.3705668,0.6294332,Middleweight
+fc4ab243d21b795d,UFC Fight Night: Royval vs. Kape,2025-12-13,King Green,Lance Gibson Jr. 'Fearless',Lance Gibson Jr. 'Fearless',0.62875867,0.37124133,0.62875867,Featherweight
+7ffdaa44fc8d111b,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Ode Osbourne 'The Jamaican Sensation',Alibi Idiris,Alibi Idiris,0.62862235,0.37137765,0.62862235,Unknown
+ceb5b0f1f6daddf6,UFC Fight Night: Royval vs. Kape,2025-12-13,Melissa Croden 'Scare',Luana Santos,Luana Santos,0.62662303,0.37337694,0.62662303,Lightweight
+f030febede41c661,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Max Holloway 'Blessed',Charles Oliveira 'Do Bronxs',Max Holloway 'Blessed',0.62653345,0.62653345,0.37346655,Bantamweight
+57d7a683b85bb87b,UFC 325: Volkanovski vs. Lopes 2,2026-01-31,Rafael Fiziev 'Ataman',Mauricio Ruffy,Mauricio Ruffy,0.6079913,0.39200872,0.6079913,Bantamweight
+225e93ebed9b71b8,UFC Fight Night: Royval vs. Kape,2025-12-13,Joanderson Brito 'Tubarao',Isaac Thomson,Joanderson Brito 'Tubarao',0.60274565,0.60274565,0.39725435,Flyweight
+71170fb7ade3e1f4,UFC Fight Night: Royval vs. Kape,2025-12-13,Jamey-Lyn Horth,Tereza Bleda,Tereza Bleda,0.600386,0.39961395,0.600386,Lightweight
+39b341180a11a7a2,UFC 325: Volkanovski vs. Lopes 2,2026-01-31,Quillan Salkilld,Rongzhu,Quillan Salkilld,0.5990105,0.5990105,0.40098947,Bantamweight
+78912b78aa946375,UFC 325: Volkanovski vs. Lopes 2,2026-01-31,Jonathan Micallef 'The Captain',Oban Elliott 'The Welsh Gangster',Jonathan Micallef 'The Captain',0.56514347,0.56514347,0.43485653,Lightweight
+2ef87718a9389997,UFC 325: Volkanovski vs. Lopes 2,2026-01-31,Jimmy Crute,Dustin Jacoby 'The Hanyak',Jimmy Crute,0.54804796,0.54804796,0.45195204,Middleweight
+67765535bd0b6bdf,UFC 325: Volkanovski vs. Lopes 2,2026-01-31,Tai Tuivasa 'Bam Bam',Tallison Teixeira 'Xicao',Tai Tuivasa 'Bam Bam',0.5310943,0.5310943,0.4689057,Light Heavyweight
+0047f8aadca1936f,UFC 325: Volkanovski vs. Lopes 2,2026-01-31,Jacob Malkoun 'Mamba',Torrez Finney 'The Punisher',Torrez Finney 'The Punisher',0.52066576,0.47933424,0.52066576,Welterweight
+0fca825e14429c1f,UFC Fight Night: Royval vs. Kape,2025-12-13,Neil Magny 'The Haitian Sensation',Yaroslav Amosov,Yaroslav Amosov,0.5182269,0.48177308,0.5182269,Lightweight
+b06b43670238c2d8,UFC 325: Volkanovski vs. Lopes 2,2026-01-31,Alexander Volkanovski 'The Great',Diego Lopes,Diego Lopes,0.5089112,0.4910888,0.5089112,Flyweight
+93ca562453f65b8d,UFC Fight Night: Royval vs. Kape,2025-12-13,Melquizael Costa 'Melk Cauthy',Morgan Charriere 'The Last Pirate',Melquizael Costa 'Melk Cauthy',0.5041217,0.5041217,0.49587828,Flyweight

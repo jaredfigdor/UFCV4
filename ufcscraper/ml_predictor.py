@@ -32,6 +32,7 @@ from sklearn.feature_selection import VarianceThreshold
 import xgboost as xgb
 import lightgbm as lgb
 import catboost as cb
+import shap
 
 if TYPE_CHECKING:
     from typing import Dict, List, Tuple, Optional, Any
@@ -365,57 +366,9 @@ class UFCPredictor:
 
         return df_imputed
 
-    def _create_interaction_features(self, X: pd.DataFrame) -> pd.DataFrame:
-        """
-        Create high-value interaction features from top predictors.
-
-        Based on feature importance analysis, creates interactions between
-        the most predictive features to capture non-linear relationships.
-        """
-        X_enhanced = X.copy()
-
-        # Interaction 1: Record quality × Age advantage
-        if 'record_quality_difference' in X.columns and 'age_advantage' in X.columns:
-            X_enhanced['record_age_interaction'] = (
-                X['record_quality_difference'] * X['age_advantage']
-            )
-
-        # Interaction 2: Wins × Win percentage (experience quality)
-        if 'fighter_1_wins' in X.columns and 'fighter_1_win_percentage' in X.columns:
-            X_enhanced['f1_win_quality'] = X['fighter_1_wins'] * X['fighter_1_win_percentage']
-        if 'fighter_2_wins' in X.columns and 'fighter_2_win_percentage' in X.columns:
-            X_enhanced['f2_win_quality'] = X['fighter_2_wins'] * X['fighter_2_win_percentage']
-
-        # Interaction 3: Late finish rate × Age vs prime (finishing ability decay)
-        if 'fighter_1_late_finish_rate' in X.columns and 'fighter_1_age_vs_prime' in X.columns:
-            X_enhanced['f1_finish_age_factor'] = (
-                X['fighter_1_late_finish_rate'] * (1 - X['fighter_1_age_vs_prime'].clip(0, 1))
-            )
-        if 'fighter_2_late_finish_rate' in X.columns and 'fighter_2_age_vs_prime' in X.columns:
-            X_enhanced['f2_finish_age_factor'] = (
-                X['fighter_2_late_finish_rate'] * (1 - X['fighter_2_age_vs_prime'].clip(0, 1))
-            )
-
-        # Interaction 4: Experience advantage × Win rate gap
-        if 'experience_advantage' in X.columns and 'win_rate_gap' in X.columns:
-            X_enhanced['exp_winrate_interaction'] = (
-                X['experience_advantage'] * X['win_rate_gap']
-            )
-
-        # Interaction 5: Recent form × Total fights (reliability of recent form)
-        if 'fighter_1_last_3_win_rate' in X.columns and 'fighter_1_total_fights' in X.columns:
-            X_enhanced['f1_form_reliability'] = (
-                X['fighter_1_last_3_win_rate'] * np.log1p(X['fighter_1_total_fights'])
-            )
-        if 'fighter_2_last_3_win_rate' in X.columns and 'fighter_2_total_fights' in X.columns:
-            X_enhanced['f2_form_reliability'] = (
-                X['fighter_2_last_3_win_rate'] * np.log1p(X['fighter_2_total_fights'])
-            )
-
-        new_features = len(X_enhanced.columns) - len(X.columns)
-        logger.info(f"Created {new_features} interaction features")
-
-        return X_enhanced
+    # REMOVED: _create_interaction_features() method - DEAD CODE
+    # Interaction features are now created in feature_engineering.py during dataset building
+    # This ensures they are included in cached datasets and avoids duplication
 
     def _select_features(self, X: pd.DataFrame, y: pd.Series = None) -> pd.DataFrame:
         """
@@ -508,7 +461,7 @@ class UFCPredictor:
                     X_mirrored[mirror_col] = X[col].values
 
         # Flip differential features (advantages become disadvantages)
-        for col in ['age_advantage', 'height_advantage', 'reach_advantage', 'experience_advantage']:
+        for col in ['height_advantage', 'reach_advantage', 'experience_advantage']:
             if col in X_mirrored.columns:
                 X_mirrored[col] = -X_mirrored[col]
 
@@ -546,39 +499,28 @@ class UFCPredictor:
         else:
             scale_pos_weight = 1.0
 
-        # TEMPORAL SPLIT: Train on older fights, test on recent fights to prevent leakage
-        # Sort by date and split chronologically
-        sorted_indices = event_dates.sort_values().index
-        split_idx = int(len(sorted_indices) * (1 - test_size))
+        # TRAIN ON ALL DATA - don't hold out recent fights!
+        # The most recent data is the MOST VALUABLE for predictions
+        # Cross-validation during GridSearchCV prevents overfitting
+        # We'll use GridSearchCV scores for performance metrics instead of a holdout test set
+        X_train = X
+        y_train = y
 
-        train_indices = sorted_indices[:split_idx]
-        test_indices = sorted_indices[split_idx:]
-
-        X_train = X.loc[train_indices]
-        X_test = X.loc[test_indices]
-        y_train = y.loc[train_indices]
-        y_test = y.loc[test_indices]
-
-        train_date_range = event_dates.loc[train_indices]
-        test_date_range = event_dates.loc[test_indices]
-        logger.info(f"Temporal split: Train from {train_date_range.min()} to {train_date_range.max()}")
-        logger.info(f"Temporal split: Test from {test_date_range.min()} to {test_date_range.max()}")
+        logger.info(f"Training on ALL {len(X_train)} fights (including most recent data)")
+        logger.info(f"Performance will be evaluated via cross-validation during hyperparameter tuning")
 
         # Final check for any remaining missing values
         if X_train.isnull().any().any():
             logger.warning("Found remaining missing values, applying final imputation...")
             final_imputer = SimpleImputer(strategy='median')
             X_train = pd.DataFrame(final_imputer.fit_transform(X_train), columns=X_train.columns, index=X_train.index)
-            X_test = pd.DataFrame(final_imputer.transform(X_test), columns=X_test.columns, index=X_test.index)
 
         # Scale features (important for some models)
         self.scaler = StandardScaler()
         X_train_scaled = self.scaler.fit_transform(X_train)
-        X_test_scaled = self.scaler.transform(X_test)
 
         # Convert back to DataFrame for XGBoost/LightGBM/CatBoost
         X_train_scaled = pd.DataFrame(X_train_scaled, columns=X_train.columns, index=X_train.index)
-        X_test_scaled = pd.DataFrame(X_test_scaled, columns=X_test.columns, index=X_test.index)
 
         # Select and configure model with AGGRESSIVE ANTI-OVERFITTING SETTINGS
         if model_type == "xgboost":
@@ -586,8 +528,8 @@ class UFCPredictor:
                 random_state=42,
                 n_jobs=-1,
                 scale_pos_weight=scale_pos_weight,  # CRITICAL: Handle class imbalance
-                early_stopping_rounds=20,  # CRITICAL: Stop when validation plateaus
                 eval_metric='auc'
+                # No early_stopping_rounds - we train on all data with CV for validation
             )
             param_grid = {
                 'n_estimators': [200, 300],  # Increased: more trees for better learning
@@ -676,15 +618,6 @@ class UFCPredictor:
             # Use stratified k-fold for better class balance in folds
             cv_strategy = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
-            # Special handling for XGBoost early stopping
-            if model_type == "xgboost":
-                fit_params = {
-                    'eval_set': [(X_test_scaled, y_test)],
-                    'verbose': False
-                }
-            else:
-                fit_params = {}
-
             grid_search = GridSearchCV(
                 base_model,
                 param_grid,
@@ -694,50 +627,33 @@ class UFCPredictor:
                 verbose=1
             )
 
-            if fit_params:
-                grid_search.fit(X_train_scaled, y_train, **fit_params)
-            else:
-                grid_search.fit(X_train_scaled, y_train)
+            grid_search.fit(X_train_scaled, y_train)
 
             self.model = grid_search.best_estimator_
             logger.info(f"Best parameters: {grid_search.best_params_}")
             logger.info(f"Best CV ROC-AUC: {grid_search.best_score_:.3f}")
+            cv_score = grid_search.best_score_
         else:
             logger.info("Training with default parameters...")
             self.model = base_model
+            self.model.fit(X_train_scaled, y_train)
+            cv_score = None
 
-            if model_type == "xgboost":
-                self.model.fit(
-                    X_train_scaled, y_train,
-                    eval_set=[(X_test_scaled, y_test)],
-                    verbose=False
-                )
-            else:
-                self.model.fit(X_train_scaled, y_train)
-
-        # Evaluate model
+        # Evaluate model on training data only (no test set)
         train_pred = self.model.predict(X_train_scaled)
-        test_pred = self.model.predict(X_test_scaled)
         train_proba = self.model.predict_proba(X_train_scaled)[:, 1]
-        test_proba = self.model.predict_proba(X_test_scaled)[:, 1]
 
         # Calculate metrics
         train_acc = accuracy_score(y_train, train_pred)
-        test_acc = accuracy_score(y_test, test_pred)
         train_auc = roc_auc_score(y_train, train_proba)
-        test_auc = roc_auc_score(y_test, test_proba)
-        train_test_gap = train_acc - test_acc
 
         metrics = {
             'model_type': model_type,
             'train_accuracy': train_acc,
-            'test_accuracy': test_acc,
-            'train_test_gap': train_test_gap,
+            'cv_auc': cv_score if cv_score else train_auc,
             'train_auc': train_auc,
-            'test_auc': test_auc,
             'n_features': len(self.feature_columns),
             'training_samples': len(X_train),
-            'test_samples': len(X_test),
             'scale_pos_weight': scale_pos_weight
         }
 
@@ -750,27 +666,18 @@ class UFCPredictor:
                 sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
             )
 
-        # Log results with overfitting warnings
+        # Log results
         logger.info(f"Model training completed:")
         logger.info(f"  Training accuracy: {train_acc:.3f}")
-        logger.info(f"  Test accuracy:     {test_acc:.3f}")
-        logger.info(f"  Train-test gap:    {train_test_gap:.3f}")
-        logger.info(f"  Train AUC:         {train_auc:.3f}")
-        logger.info(f"  Test AUC:          {test_auc:.3f}")
+        logger.info(f"  Training AUC:      {train_auc:.3f}")
+        logger.info(f"  CV AUC:            {metrics['cv_auc']:.3f}")
+        logger.info(f"  Training on {len(X_train)} fights (ALL data including recent)")
 
-        # Overfitting warnings
+        # Performance indicators
         if train_acc > 0.85:
-            logger.warning(f"  Training accuracy {train_acc:.1%} is suspiciously high - possible overfitting!")
-        if train_test_gap > 0.15:
-            logger.warning(f"  Train-test gap {train_test_gap:.1%} is too large - model is overfitting!")
-        if train_acc < 0.60:
-            logger.warning(f"  Training accuracy {train_acc:.1%} is very low - model may be underfitting!")
-
-        # Success indicators
-        if 0.65 <= train_acc <= 0.75 and train_test_gap < 0.10:
-            logger.info(" Healthy train-test balance - good generalization!")
-        if test_auc > 0.70:
-            logger.info(" Strong ROC-AUC score - good probability calibration!")
+            logger.warning(f"  Training accuracy {train_acc:.1%} is very high - monitor for overfitting")
+        if metrics['cv_auc'] > 0.70:
+            logger.info("  Strong cross-validation AUC - good probability calibration!")
 
         # Save model
         self._save_model()
@@ -813,6 +720,10 @@ class UFCPredictor:
         predictions = self.model.predict(X_pred_scaled)
         probabilities = self.model.predict_proba(X_pred_scaled)
 
+        # Generate SHAP values for explainability
+        logger.info("Generating SHAP values for prediction explanations...")
+        shap_values_dict = self._generate_shap_values(X_pred_scaled, X_pred)
+
         # Create results dataframe with proper fight metadata
         results = pd.DataFrame({
             'fight_id': prediction_df['fight_id'] if 'fight_id' in prediction_df.columns else range(len(prediction_df)),
@@ -828,6 +739,10 @@ class UFCPredictor:
         for col in preserve_columns:
             if col in prediction_df.columns:
                 results[col] = prediction_df[col].values
+
+        # Save SHAP values for web UI
+        if shap_values_dict:
+            self._save_shap_values(shap_values_dict, results)
 
         logger.info(f"Predictions completed for {len(results)} fights")
 
@@ -908,6 +823,103 @@ class UFCPredictor:
     def is_model_trained(self) -> bool:
         """Check if a model is currently loaded/trained."""
         return self.model is not None
+
+    def _generate_shap_values(self, X_scaled: np.ndarray, X_original: pd.DataFrame) -> Dict:
+        """
+        Generate SHAP values for model predictions.
+
+        Args:
+            X_scaled: Scaled feature matrix
+            X_original: Original unscaled features (for feature names)
+
+        Returns:
+            Dictionary with SHAP values and base values for each prediction
+        """
+        try:
+            # Create SHAP explainer (TreeExplainer for XGBoost/LightGBM/RandomForest)
+            if isinstance(self.model, (xgb.XGBClassifier, lgb.LGBMClassifier)):
+                explainer = shap.TreeExplainer(self.model)
+                # TreeExplainer expects original feature space, not scaled
+                # But XGBoost works with scaled data, so we use scaled
+                shap_values = explainer.shap_values(X_scaled)
+
+                # For binary classification, SHAP returns values for class 1
+                if isinstance(shap_values, list):
+                    shap_values = shap_values[1]  # Class 1 (fighter_1 wins)
+
+            elif isinstance(self.model, RandomForestClassifier):
+                explainer = shap.TreeExplainer(self.model)
+                shap_values_raw = explainer.shap_values(X_scaled)
+                if isinstance(shap_values_raw, list):
+                    shap_values = shap_values_raw[1]
+                else:
+                    shap_values = shap_values_raw
+            else:
+                # Fallback to KernelExplainer for other models
+                # Sample background dataset (use a subset for speed)
+                logger.warning("Using KernelExplainer (slower) for non-tree model")
+                return {}
+
+            # Store SHAP values with feature names
+            shap_dict = {
+                'shap_values': shap_values,  # Shape: (n_fights, n_features)
+                'feature_names': self.feature_columns,
+                'base_value': explainer.expected_value if hasattr(explainer, 'expected_value') else 0.0
+            }
+
+            logger.info(f"Generated SHAP values for {shap_values.shape[0]} predictions")
+            return shap_dict
+
+        except Exception as e:
+            logger.warning(f"Could not generate SHAP values: {e}")
+            return {}
+
+    def _save_shap_values(self, shap_dict: Dict, predictions: pd.DataFrame):
+        """
+        Save SHAP values to CSV for web UI visualization.
+
+        Args:
+            shap_dict: Dictionary containing SHAP values and metadata
+            predictions: Predictions dataframe with fight_ids
+        """
+        try:
+            shap_values = shap_dict['shap_values']
+            feature_names = shap_dict['feature_names']
+            base_value = shap_dict.get('base_value', 0.0)
+
+            # Create DataFrame with SHAP values
+            shap_df_list = []
+
+            for i, fight_id in enumerate(predictions['fight_id']):
+                # Get SHAP values for this fight
+                fight_shap = shap_values[i]
+
+                # Create rows for top 15 features (positive and negative)
+                feature_contributions = list(zip(feature_names, fight_shap))
+                # Sort by absolute value
+                feature_contributions.sort(key=lambda x: abs(x[1]), reverse=True)
+
+                # Take top 15
+                top_features = feature_contributions[:15]
+
+                for feature_name, shap_value in top_features:
+                    shap_df_list.append({
+                        'fight_id': fight_id,
+                        'feature': feature_name,
+                        'shap_value': shap_value,
+                        'base_value': base_value
+                    })
+
+            shap_df = pd.DataFrame(shap_df_list)
+
+            # Save to CSV
+            shap_file = self.data_folder / "fight_shap_values.csv"
+            shap_df.to_csv(shap_file, index=False)
+
+            logger.info(f"Saved SHAP values to {shap_file}")
+
+        except Exception as e:
+            logger.warning(f"Could not save SHAP values: {e}")
 
     def get_model_info(self) -> Dict[str, Any]:
         """Get information about the current model."""

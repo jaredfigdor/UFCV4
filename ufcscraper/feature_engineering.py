@@ -75,9 +75,19 @@ class FeatureEngineering:
         for idx, fight in fights_with_dates.iterrows():
             logger.debug(f"Processing fight {idx+1}/{len(fights_with_dates)}")
 
-            # Get fighter data
-            fighter_1_data = fighters_df[fighters_df['fighter_id'] == fight['fighter_1']].iloc[0]
-            fighter_2_data = fighters_df[fighters_df['fighter_id'] == fight['fighter_2']].iloc[0]
+            # Get fighter data - SKIP FIGHT if fighters don't exist
+            fighter_1_match = fighters_df[fighters_df['fighter_id'] == fight['fighter_1']]
+            fighter_2_match = fighters_df[fighters_df['fighter_id'] == fight['fighter_2']]
+
+            if len(fighter_1_match) == 0:
+                logger.warning(f"Skipping fight {fight['fight_id']}: Fighter 1 ({fight['fighter_1']}) not found in fighter database")
+                continue
+            if len(fighter_2_match) == 0:
+                logger.warning(f"Skipping fight {fight['fight_id']}: Fighter 2 ({fight['fighter_2']}) not found in fighter database")
+                continue
+
+            fighter_1_data = fighter_1_match.iloc[0]
+            fighter_2_data = fighter_2_match.iloc[0]
 
             # For historical context, use appropriate dataset
             if is_prediction and all_completed_fights is not None:
@@ -186,6 +196,11 @@ class FeatureEngineering:
             fight, fighter_1_data, fighter_2_data, all_fights
         ))
 
+        # Elo rating system features (combat-adapted with finish bonuses)
+        features.update(self._create_elo_features(
+            fight, fighter_1_data, fighter_2_data, all_fights
+        ))
+
         # Advanced matchup analysis
         features.update(self._create_advanced_matchup_features(
             fighter_1_data, fighter_2_data, all_fights
@@ -205,36 +220,9 @@ class FeatureEngineering:
         """Create interaction features from existing features."""
         interactions = {}
 
-        # Interaction 1: Record quality × Age advantage
-        if 'record_quality_difference' in features and 'age_advantage' in features:
-            interactions['record_age_interaction'] = (
-                features['record_quality_difference'] * features['age_advantage']
-            )
-
-        # Interaction 2: Wins × Win percentage (experience quality)
-        if 'fighter_1_wins' in features and 'fighter_1_win_percentage' in features:
-            interactions['f1_win_quality'] = features['fighter_1_wins'] * features['fighter_1_win_percentage']
-        if 'fighter_2_wins' in features and 'fighter_2_win_percentage' in features:
-            interactions['f2_win_quality'] = features['fighter_2_wins'] * features['fighter_2_win_percentage']
-
-        # Interaction 3: Late finish rate × Age vs prime
-        if 'fighter_1_late_finish_rate' in features and 'fighter_1_age_vs_prime' in features:
-            age_factor = 1 - min(max(features['fighter_1_age_vs_prime'], 0), 1)
-            interactions['f1_finish_age_factor'] = features['fighter_1_late_finish_rate'] * age_factor
-        if 'fighter_2_late_finish_rate' in features and 'fighter_2_age_vs_prime' in features:
-            age_factor = 1 - min(max(features['fighter_2_age_vs_prime'], 0), 1)
-            interactions['f2_finish_age_factor'] = features['fighter_2_late_finish_rate'] * age_factor
-
-        # Interaction 4: Experience advantage × Win rate gap
-        if 'experience_advantage' in features and 'fighter_1_win_percentage' in features and 'fighter_2_win_percentage' in features:
-            win_rate_gap = features['fighter_1_win_percentage'] - features['fighter_2_win_percentage']
-            interactions['exp_winrate_interaction'] = features['experience_advantage'] * win_rate_gap
-
-        # Interaction 5: Recent form × Total fights (reliability)
-        if 'fighter_1_last_3_win_rate' in features and 'fighter_1_total_fights' in features:
-            interactions['f1_form_reliability'] = features['fighter_1_last_3_win_rate'] * np.log1p(features['fighter_1_total_fights'])
-        if 'fighter_2_last_3_win_rate' in features and 'fighter_2_total_fights' in features:
-            interactions['f2_form_reliability'] = features['fighter_2_last_3_win_rate'] * np.log1p(features['fighter_2_total_fights'])
+        # REMOVED: All interaction features that used positional features
+        # These created the same dominance issues as the base features
+        # Keeping only differential features prevents positional bias
 
         return interactions
 
@@ -316,9 +304,10 @@ class FeatureEngineering:
         features['reach_advantage'] = (
             features.get('fighter_1_reach_cm', 0) - features.get('fighter_2_reach_cm', 0)
         )
-        features['age_advantage'] = (
-            features.get('fighter_2_age', 0) - features.get('fighter_1_age', 0)  # Younger is advantage
-        )
+
+        # REMOVED: age_advantage - was dominating predictions even with sqrt transformation
+        # Age information still available through fighter_1_age and fighter_2_age individual features
+        # The model can learn age effects without being biased by explicit age gaps
 
         return features
 
@@ -422,31 +411,22 @@ class FeatureEngineering:
                 draws = 0 if pd.isna(draws) else int(draws)
 
                 total_fights = wins + losses + draws
-                win_percentage = (wins / total_fights) if total_fights > 0 else 0.0
 
-                features[f'{prefix}wins'] = wins
-                features[f'{prefix}losses'] = losses
-                features[f'{prefix}draws'] = draws
-                features[f'{prefix}total_fights'] = total_fights
-                features[f'{prefix}win_percentage'] = win_percentage
+                # REMOVED individual W-L-D records (same reason as below)
+                # Store temporarily for differential calculation
+                if i == 1:
+                    f1_total_pred = total_fights
+                else:
+                    f2_total_pred = total_fights
 
-            # Experience advantage
-            features['experience_advantage'] = (
-                features['fighter_1_total_fights'] - features['fighter_2_total_fights']
-            )
+            # Experience advantage (differential feature only)
+            features['experience_advantage'] = f1_total_pred - f2_total_pred
 
             return features
 
         # For historical fights (training), calculate record at that point in time
         if current_fight is None or all_fights is None or all_fights.empty:
-            # Fallback: Set all record features to zero for fighters with no history
-            for i in [1, 2]:
-                prefix = f'fighter_{i}_'
-                features[f'{prefix}wins'] = 0
-                features[f'{prefix}losses'] = 0
-                features[f'{prefix}draws'] = 0
-                features[f'{prefix}total_fights'] = 0
-                features[f'{prefix}win_percentage'] = 0.0
+            # Fallback: Set only differential features
             features['experience_advantage'] = 0
             return features
 
@@ -466,17 +446,19 @@ class FeatureEngineering:
                 cutoff_date=current_fight_date
             )
 
-            # Assign record features
-            features[f'{prefix}wins'] = record['wins']
-            features[f'{prefix}losses'] = record['losses']
-            features[f'{prefix}draws'] = record['draws']
-            features[f'{prefix}total_fights'] = record['total_fights']
-            features[f'{prefix}win_percentage'] = record['win_percentage']
+            # REMOVED individual W-L-D records to prevent positional bias
+            # These features (fighter_1_wins, fighter_2_wins, etc.) were dominating predictions
+            # because the model learned "fighter_1 with 20 wins usually wins" regardless of opponent
+            # Keep only differential features (experience_advantage) and aggregate metrics
 
-        # Experience advantage
-        features['experience_advantage'] = (
-            features['fighter_1_total_fights'] - features['fighter_2_total_fights']
-        )
+            # Store temporarily for differential calculation
+            if i == 1:
+                f1_total = record['total_fights']
+            else:
+                f2_total = record['total_fights']
+
+        # Experience advantage (differential feature - position-invariant)
+        features['experience_advantage'] = f1_total - f2_total
 
         return features
 
@@ -765,7 +747,7 @@ class FeatureEngineering:
                 features[f'{prefix}first_round_finish_rate'] = np.nan
                 features[f'{prefix}late_finish_rate'] = np.nan
                 features[f'{prefix}average_fight_duration'] = np.nan
-                features[f'{prefix}takedown_success_rate'] = np.nan
+                # REMOVED: takedown_success_rate - 100% duplicate of avg_takedown_accuracy
                 continue
 
             total_fights = len(fighter_fights)
@@ -824,13 +806,140 @@ class FeatureEngineering:
                 (rounds_df['fighter_id'] == fighter_id)
             ]
 
-            if len(fighter_rounds) > 0:
-                # Calculate takedown success rate as proxy for offensive grappling
-                total_td_att = fighter_rounds['takedown_att'].sum()
-                total_td_succ = fighter_rounds['takedown_succ'].sum()
-                features[f'{prefix}takedown_success_rate'] = total_td_succ / total_td_att if total_td_att > 0 else np.nan
-            else:
-                features[f'{prefix}takedown_success_rate'] = np.nan
+            # REMOVED: takedown_success_rate calculation
+            # This was a 100% duplicate of avg_takedown_accuracy (from round stats above)
+            # Keeping avg_takedown_accuracy as it's already calculated and more descriptive
+
+        return features
+
+    def _create_elo_features(
+        self,
+        current_fight: pd.Series,
+        fighter_1: pd.Series,
+        fighter_2: pd.Series,
+        all_fights: pd.DataFrame
+    ) -> Dict:
+        """
+        Create Elo rating system features (combat-adapted).
+
+        Features:
+        - Current Elo rating for each fighter
+        - Elo delta (difference between fighters)
+        - Elo uncertainty (Glicko-inspired rating deviation)
+        - Peak Elo (career high rating)
+        - Elo trend (momentum in ratings over last 3 fights)
+        """
+        features = {}
+
+        # Elo parameters (combat-adapted)
+        K_BASE = 32  # Base K-factor
+        K_FINISH_BONUS = 16  # Extra K for finishes
+        INITIAL_ELO = 1500
+        INITIAL_RD = 350  # Rating deviation (uncertainty)
+
+        current_fight_date = pd.to_datetime(current_fight['event_date'])
+        fighter_1_id = current_fight['fighter_1']
+        fighter_2_id = current_fight['fighter_2']
+
+        # Calculate Elo for each fighter
+        for i, (fighter_id, fighter_data) in enumerate([
+            (fighter_1_id, fighter_1),
+            (fighter_2_id, fighter_2)
+        ], 1):
+            prefix = f'fighter_{i}_'
+
+            # Get fighter's historical fights (before current fight)
+            fighter_history = all_fights[
+                ((all_fights['fighter_1'] == fighter_id) | (all_fights['fighter_2'] == fighter_id)) &
+                (pd.to_datetime(all_fights['event_date']) < current_fight_date)
+            ].copy()
+
+            if len(fighter_history) == 0:
+                # Debut fighter - use initial ratings
+                features[f'{prefix}elo'] = INITIAL_ELO
+                features[f'{prefix}elo_uncertainty'] = INITIAL_RD
+                features[f'{prefix}peak_elo'] = INITIAL_ELO
+                features[f'{prefix}elo_trend'] = 0.0
+                continue
+
+            # Sort by date
+            fighter_history = fighter_history.sort_values('event_date')
+
+            # Calculate Elo progression through all fights
+            current_elo = INITIAL_ELO
+            peak_elo = INITIAL_ELO
+            elo_history = [INITIAL_ELO]
+            rd = INITIAL_RD  # Rating deviation
+
+            for _, hist_fight in fighter_history.iterrows():
+                # Determine if this fighter won
+                is_fighter_1 = hist_fight['fighter_1'] == fighter_id
+
+                if 'winner' not in hist_fight or pd.isna(hist_fight['winner']):
+                    continue
+
+                won = (is_fighter_1 and hist_fight['winner'] == hist_fight['fighter_1']) or \
+                      (not is_fighter_1 and hist_fight['winner'] == hist_fight['fighter_2'])
+
+                # Calculate expected score (simplified Elo)
+                # We don't have opponent Elo, so assume average opponent (1500)
+                expected = 1 / (1 + 10 ** ((1500 - current_elo) / 400))
+
+                # Actual score
+                actual = 1.0 if won else 0.0
+
+                # K-factor adjustments
+                k = K_BASE
+
+                # Finish bonus (more impressive wins = bigger rating change)
+                if hist_fight.get('result') in ['KO/TKO', 'Submission']:
+                    k += K_FINISH_BONUS
+
+                # Uncertainty adjustment (higher RD = more volatile ratings)
+                k_adjusted = k * (rd / INITIAL_RD)
+
+                # Update Elo
+                current_elo = current_elo + k_adjusted * (actual - expected)
+
+                # Track peak
+                peak_elo = max(peak_elo, current_elo)
+
+                # Update rating deviation (decreases with more fights)
+                rd = max(50, rd * 0.95)  # Decrease uncertainty over time
+
+                # Store for trend calculation
+                elo_history.append(current_elo)
+
+            # Calculate Elo trend (momentum over last 3 fights)
+            elo_trend = 0.0
+            if len(elo_history) >= 4:
+                recent_elos = elo_history[-4:]
+                elo_trend = recent_elos[-1] - recent_elos[0]  # Change over last 3 fights
+
+            # Store features
+            features[f'{prefix}elo'] = current_elo
+            features[f'{prefix}elo_uncertainty'] = rd
+            features[f'{prefix}peak_elo'] = peak_elo
+            features[f'{prefix}elo_trend'] = elo_trend
+
+        # Elo delta (key feature - difference in ratings)
+        features['elo_delta'] = features['fighter_1_elo'] - features['fighter_2_elo']
+
+        # Elo confidence gap (considers uncertainty)
+        f1_upper = features['fighter_1_elo'] + features['fighter_1_elo_uncertainty']
+        f1_lower = features['fighter_1_elo'] - features['fighter_1_elo_uncertainty']
+        f2_upper = features['fighter_2_elo'] + features['fighter_2_elo_uncertainty']
+        f2_lower = features['fighter_2_elo'] - features['fighter_2_elo_uncertainty']
+
+        # Overlap indicates uncertain matchup
+        overlap = min(f1_upper, f2_upper) - max(f1_lower, f2_lower)
+        features['elo_overlap'] = max(0, overlap)
+
+        # Peak Elo difference
+        features['peak_elo_delta'] = features['fighter_1_peak_elo'] - features['fighter_2_peak_elo']
+
+        # Momentum comparison (trend difference)
+        features['elo_momentum_delta'] = features['fighter_1_elo_trend'] - features['fighter_2_elo_trend']
 
         return features
 
@@ -948,19 +1057,16 @@ class FeatureEngineering:
         features['significant_height_advantage'] = 1 if height_diff > 7.5 else -1 if height_diff < -7.5 else 0
         features['significant_reach_advantage'] = 1 if reach_diff > 12.5 else -1 if reach_diff < -12.5 else 0
 
-        # Experience gap analysis
-        f1_total = fighter_1.get('fighter_w', 0) + fighter_1.get('fighter_l', 0) + fighter_1.get('fighter_d', 0)
-        f2_total = fighter_2.get('fighter_w', 0) + fighter_2.get('fighter_l', 0) + fighter_2.get('fighter_d', 0)
+        # REMOVED: Duplicate absolute value features that conflict with signed differentials
+        # - win_rate_gap (absolute) conflicted with record_quality_difference (signed)
+        # - major_experience_gap (absolute) conflicted with experience_advantage (signed)
+        # These caused artificial feature importance where each fighter got "their own" feature
+        # during data augmentation, creating biased predictions
 
-        experience_gap = abs(f1_total - f2_total)
-        features['major_experience_gap'] = 1 if experience_gap > 10 else 0
-
-        # Record quality comparison
-        f1_win_rate = fighter_1.get('fighter_w', 0) / max(f1_total, 1)
-        f2_win_rate = fighter_2.get('fighter_w', 0) / max(f2_total, 1)
-
-        features['win_rate_gap'] = abs(f1_win_rate - f2_win_rate)
-        features['record_quality_difference'] = f1_win_rate - f2_win_rate
+        # REMOVED: record_quality_difference - was dominating all predictions
+        # This feature had 0.324 correlation with winner (way too high)
+        # It was the #1 SHAP feature in every single prediction, suppressing other features
+        # Keep individual win percentages in fighter records instead
 
         return features
 
@@ -988,7 +1094,7 @@ class FeatureEngineering:
                 features[f'{prefix}avg_opponent_win_rate'] = np.nan
                 features[f'{prefix}vs_winning_record'] = np.nan
                 features[f'{prefix}vs_elite_opponents'] = np.nan
-                features[f'{prefix}strength_of_schedule'] = np.nan
+                # REMOVED: strength_of_schedule - duplicate
                 features[f'{prefix}quality_wins'] = 0
                 features[f'{prefix}bad_losses'] = 0
                 continue
@@ -1034,7 +1140,7 @@ class FeatureEngineering:
             features[f'{prefix}avg_opponent_win_rate'] = np.mean(opponent_win_rates) if opponent_win_rates else np.nan
             features[f'{prefix}vs_winning_record'] = vs_winning_record / len(fighter_fights) if len(fighter_fights) > 0 else 0
             features[f'{prefix}vs_elite_opponents'] = len([wr for wr in opponent_win_rates if wr > 0.8]) / len(fighter_fights) if len(fighter_fights) > 0 else 0
-            features[f'{prefix}strength_of_schedule'] = np.mean(opponent_win_rates) if opponent_win_rates else 0
+            # REMOVED: strength_of_schedule - 100% duplicate of avg_opponent_win_rate
             features[f'{prefix}quality_wins'] = quality_wins
             features[f'{prefix}bad_losses'] = bad_losses
 

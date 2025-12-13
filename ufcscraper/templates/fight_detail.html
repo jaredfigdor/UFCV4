@@ -235,7 +235,7 @@
 
 <!-- Advanced Features -->
 {% if advanced_features %}
-<div class="row">
+<div class="row mb-4">
     <div class="col">
         <div class="card">
             <div class="card-header bg-dark text-white">
@@ -250,7 +250,7 @@
                         <h6 class="text-muted">Key Features</h6>
                         <ul class="list-unstyled">
                             {% for key, value in advanced_features.items() %}
-                                {% if loop.index <= 150 and key not in ['fight_id', 'event_id', 'fighter_1', 'fighter_2', 'winner', 'event_date'] %}
+                                {% if loop.index <= 250 and key not in ['fight_id', 'event_id', 'fighter_1', 'fighter_2', 'winner', 'event_date'] %}
                                 <li><small><strong>{{ key }}:</strong> {{ "%.3f"|format(value) if value is number else value }}</small></li>
                                 {% endif %}
                             {% endfor %}
@@ -275,6 +275,39 @@
     </div>
 </div>
 {% endif %}
+
+<!-- SHAP Analysis -->
+{% if charts.shap_waterfall %}
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Prediction Explanation (SHAP Analysis)</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    This chart shows the top 15 features that influenced this prediction. Positive values (red) push the prediction toward
+                    <strong>{{ fighter_1.full_name if fighter_1.full_name else 'Fighter 1' }}</strong>,
+                    while negative values (blue) push toward
+                    <strong>{{ fighter_2.full_name if fighter_2.full_name else 'Fighter 2' }}</strong>.
+                </p>
+                <div id="shapWaterfallChart"></div>
+                <div class="alert alert-secondary mt-3">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>How to Read This Chart:</strong>
+                    <ul class="mb-0 mt-2 small">
+                        <li><strong>Base Value:</strong> The model's baseline prediction before considering this specific fight</li>
+                        <li><strong>SHAP Values:</strong> How much each feature pushes the prediction higher or lower</li>
+                        <li><strong>Red bars:</strong> Features that increase the probability of {{ fighter_1.full_name if fighter_1.full_name else 'Fighter 1' }} winning</li>
+                        <li><strong>Blue bars:</strong> Features that increase the probability of {{ fighter_2.full_name if fighter_2.full_name else 'Fighter 2' }} winning</li>
+                        <li>Longer bars = stronger influence on the prediction</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -293,6 +326,11 @@
     {% if charts.style_radar %}
     var styleData = {{ charts.style_radar | safe }};
     Plotly.newPlot('styleRadarChart', styleData.data, styleData.layout, {responsive: true});
+    {% endif %}
+
+    {% if charts.shap_waterfall %}
+    var shapData = {{ charts.shap_waterfall | safe }};
+    Plotly.newPlot('shapWaterfallChart', shapData.data, shapData.layout, {responsive: true});
     {% endif %}
 </script>
 {% endblock %}

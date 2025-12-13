@@ -23,6 +23,7 @@ plotly = "^5.18.0"
 xgboost = "^2.0.0"
 lightgbm = "^4.0.0"
 catboost = "^1.2.0"
+shap = "^0.45.0"
 
 [tool.poetry.group.dev.dependencies]
 python-semantic-release = "^9.14.0"

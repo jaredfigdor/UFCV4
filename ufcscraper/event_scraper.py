@@ -94,13 +94,13 @@ class EventScraper(BaseScraper):
                     today = datetime.date.today()
                     event_date_only = parsed_date.date()
 
-                    # For EventScraper (completed events), only include past events
-                    if self.event_type == "completed" and event_date_only > today:
-                        logger.info(f"Skipping future event '{event_name.strip()}' ({event_date_only}) from completed events")
+                    # For EventScraper (completed events), only include past events (not today or future)
+                    if self.event_type == "completed" and event_date_only >= today:
+                        logger.info(f"Skipping future/today event '{event_name.strip()}' ({event_date_only}) from completed events")
                         continue
 
-                    # For UpcomingEventScraper, only include future events
-                    if self.event_type == "upcoming" and event_date_only <= today:
+                    # For UpcomingEventScraper, only include today and future events
+                    if self.event_type == "upcoming" and event_date_only < today:
                         logger.info(f"Skipping past event '{event_name.strip()}' ({event_date_only}) from upcoming events")
                         continue
                     event_city = full_location[0]
