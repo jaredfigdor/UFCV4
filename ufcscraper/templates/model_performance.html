@@ -4,79 +4,71 @@
 {% block nav_performance %}active{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1 class="display-4">
-            <i class="fas fa-chart-line text-danger"></i> Model Performance
-        </h1>
-        <p class="lead text-muted">Machine learning model metrics and feature analysis</p>
-    </div>
+<!-- Page Header -->
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="fas fa-brain"></i>
+        Model Performance
+    </h1>
+    <p class="page-subtitle">Machine learning metrics and feature analysis</p>
 </div>
 
-<!-- Model Metrics -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-robot fa-2x text-primary mb-2"></i>
-                <h6 class="text-muted mb-2">Model Type</h6>
-                <p class="mb-0"><strong>{{ metrics.model_type if metrics.model_type else 'Random Forest' }}</strong></p>
-            </div>
+<!-- Compact Stats Chips -->
+<div class="stats-chips">
+    <div class="stat-chip">
+        <i class="fas fa-robot stat-chip-icon primary"></i>
+        <div class="stat-chip-content">
+            <span class="stat-chip-value">{{ metrics.model_type if metrics.model_type else 'RF' }}</span>
+            <span class="stat-chip-label">Algorithm</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-                <h6 class="text-muted mb-2">Status</h6>
-                <p class="mb-0">
-                    {% if metrics.trained %}
-                        <span class="badge bg-success">Trained</span>
-                    {% else %}
-                        <span class="badge bg-warning">Not Trained</span>
-                    {% endif %}
-                </p>
-            </div>
+
+    <div class="stat-chip">
+        <i class="fas fa-check-circle stat-chip-icon {{ 'success' if metrics.trained else 'warning' }}"></i>
+        <div class="stat-chip-content">
+            <span class="stat-chip-value">{{ 'Trained' if metrics.trained else 'Not Trained' }}</span>
+            <span class="stat-chip-label">Status</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-database fa-2x text-info mb-2"></i>
-                <h6 class="text-muted mb-2">Training Samples</h6>
-                <h5 class="mb-0">{{ "{:,}".format(metrics.training_samples) if metrics.training_samples else 'N/A' }}</h5>
-            </div>
+
+    <div class="stat-chip">
+        <i class="fas fa-database stat-chip-icon info"></i>
+        <div class="stat-chip-content">
+            <span class="stat-chip-value">{{ "{:,}".format(metrics.training_samples) if metrics.training_samples else 'N/A' }}</span>
+            <span class="stat-chip-label">Training Fights</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-crystal-ball fa-2x text-warning mb-2"></i>
-                <h6 class="text-muted mb-2">Prediction Samples</h6>
-                <h5 class="mb-0">{{ metrics.prediction_samples if metrics.prediction_samples else 'N/A' }}</h5>
-            </div>
+
+    <div class="stat-chip">
+        <i class="fas fa-crystal-ball stat-chip-icon warning"></i>
+        <div class="stat-chip-content">
+            <span class="stat-chip-value">{{ metrics.prediction_samples if metrics.prediction_samples else 'N/A' }}</span>
+            <span class="stat-chip-label">Predictions</span>
         </div>
     </div>
 </div>
 
-<!-- Performance Metrics (if available from model metadata) -->
+<!-- Performance Metrics (if available) -->
 {% if metrics.test_accuracy or metrics.test_auc %}
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body text-center">
-                <i class="fas fa-bullseye fa-2x text-success mb-2"></i>
-                <h6 class="text-muted mb-2">Test Accuracy</h6>
-                <h2 class="mb-0 text-success">{{ "%.1f"|format(metrics.test_accuracy * 100) }}%</h2>
+<div class="fighter-profiles-grid mb-4">
+    <div class="fighter-profile-card">
+        <div class="fighter-profile-header">
+            <h3><i class="fas fa-bullseye"></i> Test Accuracy</h3>
+        </div>
+        <div class="fighter-profile-body text-center">
+            <div class="prediction-winner" style="font-size: 3rem;">
+                {{ "%.1f"|format(metrics.test_accuracy * 100) }}%
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body text-center">
-                <i class="fas fa-chart-area fa-2x text-primary mb-2"></i>
-                <h6 class="text-muted mb-2">ROC AUC Score</h6>
-                <h2 class="mb-0 text-primary">{{ "%.3f"|format(metrics.test_auc) }}</h2>
+
+    <div class="fighter-profile-card">
+        <div class="fighter-profile-header">
+            <h3><i class="fas fa-chart-area"></i> ROC AUC Score</h3>
+        </div>
+        <div class="fighter-profile-body text-center">
+            <div class="prediction-winner" style="font-size: 3rem;">
+                {{ "%.3f"|format(metrics.test_auc) }}
             </div>
         </div>
     </div>
@@ -85,59 +77,59 @@
 
 <!-- Feature Importance Chart -->
 {% if feature_chart %}
-<div class="row mb-4">
-    <div class="col">
-        <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0"><i class="fas fa-star"></i> Feature Importance</h5>
-            </div>
-            <div class="card-body">
-                <div id="featureImportanceChart"></div>
-            </div>
-        </div>
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>
+            <i class="fas fa-star"></i>
+            Feature Importance
+        </h5>
+    </div>
+    <div class="card-body">
+        <div id="featureImportanceChart"></div>
     </div>
 </div>
 {% endif %}
 
 <!-- Model Information -->
-<div class="row">
-    <div class="col">
-        <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Model Information</h5>
+<div class="card">
+    <div class="card-header">
+        <h5>
+            <i class="fas fa-info-circle"></i>
+            Model Information
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="stats-comparison-grid">
+            <div class="comparison-stat-row">
+                <div class="comparison-stat-label">Algorithm</div>
+                <p class="text-center">{{ metrics.model_type if metrics.model_type else 'Random Forest Classifier' }}</p>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="text-muted">Algorithm</h6>
-                        <p>{{ metrics.model_type if metrics.model_type else 'Random Forest Classifier' }}</p>
 
-                        <h6 class="text-muted mt-3">Training Data</h6>
-                        <p>{{ "{:,}".format(metrics.training_samples) if metrics.training_samples else 'N/A' }} completed fights</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="text-muted">Features Used</h6>
-                        <p>100+ advanced features including:
-                            <ul class="small">
-                                <li>Physical attributes (height, reach, weight, age)</li>
-                                <li>Career statistics (wins, losses, experience)</li>
-                                <li>Fighting style metrics (KO rate, submission rate)</li>
-                                <li>Momentum indicators (win streaks, recent performance)</li>
-                                <li>Opponent quality ratings</li>
-                                <li>Career stage analysis</li>
-                            </ul>
-                        </p>
-                    </div>
-                </div>
-
-                <hr>
-
-                <div class="alert alert-info mb-0">
-                    <i class="fas fa-lightbulb"></i>
-                    <strong>Note:</strong> The model is trained on historical UFC fight data with leak-free temporal feature engineering
-                    to ensure predictions are based only on information available before each fight.
-                </div>
+            <div class="comparison-stat-row">
+                <div class="comparison-stat-label">Training Data</div>
+                <p class="text-center">{{ "{:,}".format(metrics.training_samples) if metrics.training_samples else 'N/A' }} completed fights</p>
             </div>
+
+            <div class="comparison-stat-row">
+                <div class="comparison-stat-label">Features Used</div>
+                <p class="text-center">137+ advanced features including:</p>
+                <ul style="list-style-type: none; padding-left: 0; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                    <li>• Physical attributes (height, reach, weight, age)</li>
+                    <li>• Career statistics (wins, losses, experience)</li>
+                    <li>• Fighting style metrics (KO rate, submission rate, finish patterns)</li>
+                    <li>• Momentum indicators (win streaks, recent performance)</li>
+                    <li>• Opponent quality ratings and strength of schedule</li>
+                    <li>• Career stage analysis (peak, rising, declining)</li>
+                    <li>• Advanced round statistics (takedown defense, striking defense)</li>
+                    <li>• Strike distribution (head, body, leg percentages)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="info-box mt-4">
+            <i class="fas fa-lightbulb"></i>
+            <strong>Note:</strong> The model is trained on historical UFC fight data with leak-free temporal feature engineering
+            to ensure predictions are based only on information available before each fight.
         </div>
     </div>
 </div>
@@ -146,8 +138,23 @@
 {% block extra_js %}
 {% if feature_chart %}
 <script>
-    // Render feature importance chart
+    // Render feature importance chart with dark theme
     var featureData = {{ feature_chart | safe }};
+
+    // Apply dark theme to layout
+    featureData.layout.template = 'plotly_dark';
+    featureData.layout.paper_bgcolor = '#1e1e1e';
+    featureData.layout.plot_bgcolor = '#1a1a1a';
+    featureData.layout.font = {
+        color: '#e5e5e5',
+        family: 'Inter, system-ui, -apple-system, sans-serif'
+    };
+
+    // Update marker color to use accent color
+    if (featureData.data && featureData.data[0]) {
+        featureData.data[0].marker.color = '#6366f1';
+    }
+
     Plotly.newPlot('featureImportanceChart', featureData.data, featureData.layout, {responsive: true});
 </script>
 {% endif %}

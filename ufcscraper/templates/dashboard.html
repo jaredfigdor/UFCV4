@@ -4,203 +4,308 @@
 {% block nav_dashboard %}active{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1 class="display-4">
-            <i class="fas fa-fist-raised text-danger"></i> Upcoming Fight Predictions
-        </h1>
-        <p class="lead text-muted">AI-powered predictions for upcoming UFC fights</p>
-    </div>
+<!-- Page Header -->
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="fas fa-chart-bar"></i>
+        Fight Predictions
+    </h1>
+    <p class="page-subtitle">AI-powered UFC fight outcome predictions</p>
 </div>
 
-<!-- Summary Statistics -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-calendar-alt fa-2x text-primary mb-2"></i>
-                <h3 class="mb-0">{{ stats.total_fights }}</h3>
-                <p class="text-muted mb-0">Upcoming Fights</p>
-            </div>
+<!-- Compact Stats Chips -->
+<div class="stats-chips">
+    <div class="stat-chip">
+        <i class="fas fa-calendar-alt stat-chip-icon primary"></i>
+        <div class="stat-chip-content">
+            <span class="stat-chip-value">{{ stats.total_fights }}</span>
+            <span class="stat-chip-label">Upcoming</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-star fa-2x text-warning mb-2"></i>
-                <h3 class="mb-0">{{ stats.high_confidence }}</h3>
-                <p class="text-muted mb-0">High Confidence (>70%)</p>
-            </div>
+
+    <div class="stat-chip">
+        <i class="fas fa-star stat-chip-icon success"></i>
+        <div class="stat-chip-content">
+            <span class="stat-chip-value">{{ stats.high_confidence }}</span>
+            <span class="stat-chip-label">High Conf (>70%)</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-percentage fa-2x text-success mb-2"></i>
-                <h3 class="mb-0">{{ "%.1f"|format(stats.avg_confidence * 100) }}%</h3>
-                <p class="text-muted mb-0">Avg Confidence</p>
-            </div>
+
+    <div class="stat-chip">
+        <i class="fas fa-percentage stat-chip-icon warning"></i>
+        <div class="stat-chip-content">
+            <span class="stat-chip-value">{{ "%.1f"|format(stats.avg_confidence * 100) }}%</span>
+            <span class="stat-chip-label">Avg Conf</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-trophy fa-2x text-danger mb-2"></i>
-                <h3 class="mb-0">{{ stats.events }}</h3>
-                <p class="text-muted mb-0">Events</p>
-            </div>
+
+    <div class="stat-chip">
+        <i class="fas fa-trophy stat-chip-icon danger"></i>
+        <div class="stat-chip-content">
+            <span class="stat-chip-value">{{ stats.events }}</span>
+            <span class="stat-chip-label">Events</span>
         </div>
     </div>
 </div>
 
-<!-- Event Filter -->
-<div class="row mb-3">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <form method="get" action="/" id="eventFilterForm">
-                    <div class="row align-items-center">
-                        <div class="col-auto">
-                            <label for="eventSelect" class="form-label mb-0">
-                                <i class="fas fa-filter"></i> Filter by Event:
-                            </label>
-                        </div>
-                        <div class="col">
-                            <select class="form-select" id="eventSelect" name="event" onchange="this.form.submit()">
-                                <option value="all" {% if selected_event == 'all' %}selected{% endif %}>All Events</option>
-                                {% for event in events %}
-                                <option value="{{ event }}" {% if selected_event == event %}selected{% endif %}>
-                                    {{ event }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        {% if selected_event != 'all' %}
-                        <div class="col-auto">
-                            <a href="/" class="btn btn-sm btn-outline-secondary">
-                                <i class="fas fa-times"></i> Clear Filter
+<!-- Predictions Table Card -->
+<div class="card">
+    <div class="card-header">
+        <h5>
+            <i class="fas fa-list"></i>
+            All Predictions
+            {% if selected_event != 'all' %}
+                <span class="badge badge-info ms-2">{{ selected_event }}</span>
+            {% endif %}
+        </h5>
+    </div>
+
+    <div class="card-body p-0">
+        <!-- Table Controls -->
+        <div class="table-controls" style="padding: var(--space-4) var(--space-6);">
+            <div class="table-search">
+                <input
+                    type="text"
+                    id="fighterSearch"
+                    placeholder="Search fighters..."
+                    onkeyup="filterTable()"
+                >
+            </div>
+
+            <div class="table-filters">
+                <select class="filter-select" id="eventFilter" onchange="filterByEvent()">
+                    <option value="all">All Events</option>
+                    {% for event in events %}
+                    <option value="{{ event }}" {% if selected_event == event %}selected{% endif %}>
+                        {{ event }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <select class="filter-select" id="sortFilter" onchange="sortTable()">
+                    <option value="confidence-desc">Confidence (High to Low)</option>
+                    <option value="confidence-asc">Confidence (Low to High)</option>
+                    <option value="date-asc">Date (Earliest First)</option>
+                    <option value="date-desc">Date (Latest First)</option>
+                </select>
+            </div>
+        </div>
+
+        {% if predictions %}
+        <div class="table-responsive">
+            <table class="table" id="predictionsTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" onclick="sortTableByColumn(0)">Event</th>
+                        <th class="sortable" onclick="sortTableByColumn(1)">Date</th>
+                        <th class="sortable" onclick="sortTableByColumn(2)">Fighter 1</th>
+                        <th class="sortable" onclick="sortTableByColumn(3)">Fighter 2</th>
+                        <th class="sortable" onclick="sortTableByColumn(4)">Weight Class</th>
+                        <th class="sortable" onclick="sortTableByColumn(5)">Predicted Winner</th>
+                        <th class="sortable" onclick="sortTableByColumn(6)">Confidence</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fight in predictions %}
+                    <tr data-event="{{ fight.event_name if fight.event_name else 'Unknown Event' }}" data-date="{{ fight.event_date if fight.event_date else 'TBA' }}" data-confidence="{{ fight.confidence if fight.confidence else 0 }}">
+                        <td class="text">
+                            <small>{{ fight.event_name if fight.event_name else 'Unknown Event' }}</small>
+                        </td>
+                        <td class="text">
+                            <small>{{ fight.event_date if fight.event_date else 'TBA' }}</small>
+                        </td>
+                        <td>
+                            <strong>{{ fight.fighter_1_name if fight.fighter_1_name else 'Fighter 1' }}</strong>
+                        </td>
+                        <td>
+                            <strong>{{ fight.fighter_2_name if fight.fighter_2_name else 'Fighter 2' }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge badge-secondary">
+                                {{ fight.weight_class_name if fight.weight_class_name else 'Unknown' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge badge-info">
+                                {{ fight.predicted_winner_name if fight.predicted_winner_name else 'Unknown' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% set confidence = fight.confidence * 100 if fight.confidence else 0 %}
+                            {% if confidence > 70 %}
+                                <span class="badge badge-success">{{ "%.1f"|format(confidence) }}%</span>
+                            {% elif confidence > 50 %}
+                                <span class="badge badge-warning">{{ "%.1f"|format(confidence) }}%</span>
+                            {% else %}
+                                <span class="badge badge-secondary">{{ "%.1f"|format(confidence) }}%</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/fight/{{ fight.fight_id }}" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-eye"></i> View
                             </a>
-                        </div>
-                        {% endif %}
-                    </div>
-                </form>
-            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-    </div>
-</div>
-
-<!-- Predictions Table -->
-<div class="row">
-    <div class="col">
-        <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-list"></i> Fight Predictions
-                    {% if selected_event != 'all' %}
-                        <span class="badge bg-danger ms-2">{{ selected_event }}</span>
-                    {% endif %}
-                </h5>
-            </div>
-            <div class="card-body p-0">
-                {% if predictions %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Event</th>
-                                <th>Date</th>
-                                <th>Fighter 1</th>
-                                <th>Fighter 2</th>
-                                <th>Weight Class</th>
-                                <th>Predicted Winner</th>
-                                <th>Confidence</th>
-                                <th>Win Probability</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for fight in predictions %}
-                            <tr>
-                                <td>
-                                    <small class="text-muted">
-                                        {{ fight.event_name if fight.event_name else 'Unknown Event' }}
-                                    </small>
-                                </td>
-                                <td>
-                                    <small>
-                                        {{ fight.event_date if fight.event_date else 'TBA' }}
-                                    </small>
-                                </td>
-                                <td>
-                                    <strong>{{ fight.fighter_1_name if fight.fighter_1_name else 'Fighter 1' }}</strong>
-                                </td>
-                                <td>
-                                    <strong>{{ fight.fighter_2_name if fight.fighter_2_name else 'Fighter 2' }}</strong>
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary">
-                                        {{ fight.weight_class_name if fight.weight_class_name else 'Unknown' }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-danger">
-                                        {{ fight.predicted_winner_name if fight.predicted_winner_name else 'Unknown' }}
-                                    </span>
-                                </td>
-                                <td>
-                                    {% set confidence = fight.confidence * 100 if fight.confidence else 0 %}
-                                    {% if confidence > 70 %}
-                                        <span class="badge bg-success">{{ "%.1f"|format(confidence) }}%</span>
-                                    {% elif confidence > 50 %}
-                                        <span class="badge bg-warning">{{ "%.1f"|format(confidence) }}%</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">{{ "%.1f"|format(confidence) }}%</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <small class="text-muted">
-                                        {% if fight.fighter_1_win_probability %}
-                                            {{ "%.1f"|format(fight.fighter_1_win_probability * 100) }}% /
-                                            {{ "%.1f"|format(fight.fighter_2_win_probability * 100) }}%
-                                        {% else %}
-                                            N/A
-                                        {% endif %}
-                                    </small>
-                                </td>
-                                <td>
-                                    <a href="/fight/{{ fight.fight_id }}" class="btn btn-sm btn-outline-danger">
-                                        <i class="fas fa-eye"></i> Details
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                    <p class="text-muted">No predictions available. Run the prediction pipeline first.</p>
-                </div>
-                {% endif %}
-            </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No predictions available. Run the prediction pipeline first.</p>
         </div>
+        {% endif %}
     </div>
 </div>
 
 <!-- Legend -->
-<div class="row mt-4">
-    <div class="col">
-        <div class="card">
-            <div class="card-body">
-                <h6 class="card-title"><i class="fas fa-info-circle"></i> Confidence Levels</h6>
-                <div class="d-flex gap-3">
-                    <span><span class="badge bg-success">High</span> > 70%</span>
-                    <span><span class="badge bg-warning">Medium</span> 50-70%</span>
-                    <span><span class="badge bg-secondary">Low</span> < 50%</span>
-                </div>
-            </div>
+<div class="card mt-4">
+    <div class="card-body">
+        <h6 class="mb-3"><i class="fas fa-info-circle"></i> Confidence Levels</h6>
+        <div class="d-flex gap-4 flex-wrap">
+            <span>
+                <span class="badge badge-success">High</span> > 70%
+            </span>
+            <span>
+                <span class="badge badge-warning">Medium</span> 50-70%
+            </span>
+            <span>
+                <span class="badge badge-secondary">Low</span> < 50%
+            </span>
         </div>
     </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Search functionality
+function filterTable() {
+    const input = document.getElementById('fighterSearch');
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById('predictionsTable');
+    const tr = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < tr.length; i++) {
+        const fighter1 = tr[i].getElementsByTagName('td')[2];
+        const fighter2 = tr[i].getElementsByTagName('td')[3];
+
+        if (fighter1 && fighter2) {
+            const txtValue1 = fighter1.textContent || fighter1.innerText;
+            const txtValue2 = fighter2.textContent || fighter2.innerText;
+
+            if (txtValue1.toUpperCase().indexOf(filter) > -1 ||
+                txtValue2.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = '';
+            } else {
+                tr[i].style.display = 'none';
+            }
+        }
+    }
+}
+
+// Event filter
+function filterByEvent() {
+    const select = document.getElementById('eventFilter');
+    const selectedEvent = select.value;
+
+    if (selectedEvent === 'all') {
+        window.location.href = '/';
+    } else {
+        window.location.href = '/?event=' + encodeURIComponent(selectedEvent);
+    }
+}
+
+// Sort table
+function sortTable() {
+    const select = document.getElementById('sortFilter');
+    const sortValue = select.value;
+    const table = document.getElementById('predictionsTable');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rows = Array.from(tbody.getElementsByTagName('tr'));
+
+    rows.sort((a, b) => {
+        let aVal, bVal;
+
+        switch(sortValue) {
+            case 'confidence-desc':
+                aVal = parseFloat(a.getAttribute('data-confidence'));
+                bVal = parseFloat(b.getAttribute('data-confidence'));
+                return bVal - aVal;
+
+            case 'confidence-asc':
+                aVal = parseFloat(a.getAttribute('data-confidence'));
+                bVal = parseFloat(b.getAttribute('data-confidence'));
+                return aVal - bVal;
+
+            case 'date-asc':
+                aVal = new Date(a.getAttribute('data-date'));
+                bVal = new Date(b.getAttribute('data-date'));
+                return aVal - bVal;
+
+            case 'date-desc':
+                aVal = new Date(a.getAttribute('data-date'));
+                bVal = new Date(b.getAttribute('data-date'));
+                return bVal - aVal;
+
+            default:
+                return 0;
+        }
+    });
+
+    // Reappend sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// Column sorting
+let sortDirection = {};
+
+function sortTableByColumn(columnIndex) {
+    const table = document.getElementById('predictionsTable');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rows = Array.from(tbody.getElementsByTagName('tr'));
+    const headers = table.getElementsByTagName('th');
+
+    // Initialize sort direction for this column if not exists
+    if (sortDirection[columnIndex] === undefined) {
+        sortDirection[columnIndex] = 'asc';
+    } else {
+        sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+    }
+
+    const direction = sortDirection[columnIndex];
+
+    // Remove all sort classes
+    for (let header of headers) {
+        header.classList.remove('sort-asc', 'sort-desc');
+    }
+
+    // Add appropriate class to current header
+    headers[columnIndex].classList.add(direction === 'asc' ? 'sort-asc' : 'sort-desc');
+
+    rows.sort((a, b) => {
+        const aText = a.getElementsByTagName('td')[columnIndex].textContent.trim();
+        const bText = b.getElementsByTagName('td')[columnIndex].textContent.trim();
+
+        // Try to parse as number for confidence
+        if (columnIndex === 6) {
+            const aNum = parseFloat(aText.replace('%', ''));
+            const bNum = parseFloat(bText.replace('%', ''));
+            return direction === 'asc' ? aNum - bNum : bNum - aNum;
+        }
+
+        // String comparison
+        if (direction === 'asc') {
+            return aText.localeCompare(bText);
+        } else {
+            return bText.localeCompare(aText);
+        }
+    });
+
+    rows.forEach(row => tbody.appendChild(row));
+}
+</script>
 {% endblock %}

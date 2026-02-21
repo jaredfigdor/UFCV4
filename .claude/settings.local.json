@@ -6,7 +6,8 @@
       "Bash(poetry install:*)",
       "Bash(pip install:*)",
       "Bash(taskkill:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(del training_cache_metadata.json training_dataset_cache.csv prediction_cache_metadata.json prediction_dataset_cache.csv)"
     ],
     "deny": [],
     "ask": []

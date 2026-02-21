@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Plotly -->
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -20,43 +20,38 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-fist-raised"></i> UFC Predictions
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <a href="/" class="sidebar-brand">
+                <i class="fas fa-chart-line"></i>
+                <span>UFC Predict</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link {% block nav_dashboard %}{% endblock %}" href="/">
-                            <i class="fas fa-home"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% block nav_performance %}{% endblock %}" href="/model-performance">
-                            <i class="fas fa-chart-line"></i> Model Performance
-                        </a>
-                    </li>
-                </ul>
-            </div>
+        </div>
+
+        <div class="sidebar-nav">
+            <a href="/" class="sidebar-nav-item {% block nav_dashboard %}{% endblock %}">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/model-performance" class="sidebar-nav-item {% block nav_performance %}{% endblock %}">
+                <i class="fas fa-brain"></i>
+                <span>Model Performance</span>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <div>ML-Powered Predictions</div>
+            <div style="margin-top: 4px; font-size: 0.65rem; opacity: 0.6;">v2.0.0</div>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="container-fluid py-4">
-        {% block content %}{% endblock %}
-    </main>
-
-    <!-- Footer -->
-    <footer class="footer mt-5 py-3 bg-dark text-white">
-        <div class="container text-center">
-            <span class="text-muted">UFC Fight Predictions • Powered by Machine Learning</span>
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <div class="content-wrapper">
+            {% block content %}{% endblock %}
         </div>
-    </footer>
+    </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

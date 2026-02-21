@@ -203,12 +203,32 @@ class FeatureEngineering:
 
         # Advanced matchup analysis
         features.update(self._create_advanced_matchup_features(
-            fighter_1_data, fighter_2_data, all_fights
+            fighter_1_data, fighter_2_data, all_fights, rounds_df, fight
         ))
 
         # Opponent quality features
         features.update(self._create_opponent_quality_features(
             fight, fighter_1_data, fighter_2_data, all_fights, fighters_df
+        ))
+
+        # Damage history and chin erosion features
+        features.update(self._create_damage_history_features(
+            fight, fighter_1_data, fighter_2_data, all_fights, rounds_df
+        ))
+
+        # Pace sustainability and cardio decay features
+        features.update(self._create_pace_sustainability_features(
+            fight, fighter_1_data, fighter_2_data, all_fights, rounds_df
+        ))
+
+        # Late-round performance and cardio mismatch features
+        features.update(self._create_late_round_features(
+            fight, fighter_1_data, fighter_2_data, all_fights, rounds_df
+        ))
+
+        # Takedown defense under fatigue features
+        features.update(self._create_fatigue_defense_features(
+            fight, fighter_1_data, fighter_2_data, all_fights, rounds_df
         ))
 
         # Interaction features - create polynomial combinations of top predictors
@@ -233,14 +253,18 @@ class FeatureEngineering:
         # Weight class - encode as numeric for XGBoost
         # Ordered by weight (lightest to heaviest)
         weight_class_map = {
-            'Flyweight': 1,
-            'Bantamweight': 2,
-            'Featherweight': 3,
-            'Lightweight': 4,
-            'Welterweight': 5,
-            'Middleweight': 6,
-            'Light Heavyweight': 7,
-            'Heavyweight': 8,
+            "Women's Strawweight": 0.5,  # 115 lbs
+            'Flyweight': 1,  # 125 lbs
+            "Women's Flyweight": 1,  # 125 lbs
+            'Bantamweight': 2,  # 135 lbs
+            "Women's Bantamweight": 2,  # 135 lbs
+            "Women's Featherweight": 3,  # 145 lbs
+            'Featherweight': 3,  # 145 lbs
+            'Lightweight': 4,  # 155 lbs
+            'Welterweight': 5,  # 170 lbs
+            'Middleweight': 6,  # 185 lbs
+            'Light Heavyweight': 7,  # 205 lbs
+            'Heavyweight': 8,  # 265 lbs
             'Catch Weight': 4.5,  # Between typical weight classes
             'Open Weight': 8.5,  # Heavier than heavyweight
             'Unknown': 5  # Default to middle
@@ -489,11 +513,35 @@ class FeatureEngineering:
                     features[f'{prefix}last_{window}_finish_rate'] = np.nan
                     features[f'{prefix}last_{window}_avg_fight_time'] = np.nan
 
+                # Existing features
                 features[f'{prefix}avg_striking_accuracy'] = np.nan
                 features[f'{prefix}avg_takedown_accuracy'] = np.nan
                 features[f'{prefix}avg_control_time'] = np.nan
                 features[f'{prefix}avg_strikes_per_round'] = np.nan
                 features[f'{prefix}days_since_last_fight'] = np.nan
+
+                # Existing round stats features
+                features[f'{prefix}takedown_defense'] = np.nan
+                features[f'{prefix}striking_defense'] = np.nan
+                features[f'{prefix}strikes_landed_per_min'] = np.nan
+                features[f'{prefix}strikes_absorbed_per_min'] = np.nan
+                features[f'{prefix}knockdowns_per_fight'] = np.nan
+                features[f'{prefix}head_strike_pct'] = np.nan
+                features[f'{prefix}body_strike_pct'] = np.nan
+                features[f'{prefix}leg_strike_pct'] = np.nan
+                features[f'{prefix}avg_takedowns_attempted'] = np.nan
+                features[f'{prefix}submission_attempts_per_fight'] = np.nan
+                features[f'{prefix}reversals_per_fight'] = np.nan
+                # New absorption features
+                features[f'{prefix}head_strikes_absorbed_per_min'] = np.nan
+                features[f'{prefix}body_strikes_absorbed_per_min'] = np.nan
+                features[f'{prefix}leg_strikes_absorbed_per_min'] = np.nan
+                features[f'{prefix}head_absorption_rate'] = np.nan
+                features[f'{prefix}knockdowns_absorbed_per_fight'] = np.nan
+                features[f'{prefix}knockdowns_absorbed_per_min'] = np.nan
+                features[f'{prefix}clinch_strike_defense'] = np.nan
+                features[f'{prefix}ground_strike_defense'] = np.nan
+                features[f'{prefix}distance_strike_defense'] = np.nan
                 continue
 
             # Sort by date
@@ -547,10 +595,35 @@ class FeatureEngineering:
                 fighter_id, fighter_fights, rounds_df
             )
 
+            # Existing features
             features[f'{prefix}avg_striking_accuracy'] = fighter_round_stats.get('striking_accuracy', np.nan)
             features[f'{prefix}avg_takedown_accuracy'] = fighter_round_stats.get('takedown_accuracy', np.nan)
             features[f'{prefix}avg_control_time'] = fighter_round_stats.get('control_time', np.nan)
             features[f'{prefix}avg_strikes_per_round'] = fighter_round_stats.get('strikes_per_round', np.nan)
+
+            # Existing round stats features
+            features[f'{prefix}takedown_defense'] = fighter_round_stats.get('takedown_defense', np.nan)
+            features[f'{prefix}striking_defense'] = fighter_round_stats.get('striking_defense', np.nan)
+            features[f'{prefix}strikes_landed_per_min'] = fighter_round_stats.get('strikes_landed_per_min', np.nan)
+            features[f'{prefix}strikes_absorbed_per_min'] = fighter_round_stats.get('strikes_absorbed_per_min', np.nan)
+            features[f'{prefix}knockdowns_per_fight'] = fighter_round_stats.get('knockdowns_per_fight', np.nan)
+            features[f'{prefix}head_strike_pct'] = fighter_round_stats.get('head_strike_pct', np.nan)
+            features[f'{prefix}body_strike_pct'] = fighter_round_stats.get('body_strike_pct', np.nan)
+            features[f'{prefix}leg_strike_pct'] = fighter_round_stats.get('leg_strike_pct', np.nan)
+            features[f'{prefix}avg_takedowns_attempted'] = fighter_round_stats.get('avg_takedowns_attempted', np.nan)
+            features[f'{prefix}submission_attempts_per_fight'] = fighter_round_stats.get('submission_attempts_per_fight', np.nan)
+            features[f'{prefix}reversals_per_fight'] = fighter_round_stats.get('reversals_per_fight', np.nan)
+
+            # New absorption features
+            features[f'{prefix}head_strikes_absorbed_per_min'] = fighter_round_stats.get('head_strikes_absorbed_per_min', np.nan)
+            features[f'{prefix}body_strikes_absorbed_per_min'] = fighter_round_stats.get('body_strikes_absorbed_per_min', np.nan)
+            features[f'{prefix}leg_strikes_absorbed_per_min'] = fighter_round_stats.get('leg_strikes_absorbed_per_min', np.nan)
+            features[f'{prefix}head_absorption_rate'] = fighter_round_stats.get('head_absorption_rate', np.nan)
+            features[f'{prefix}knockdowns_absorbed_per_fight'] = fighter_round_stats.get('knockdowns_absorbed_per_fight', np.nan)
+            features[f'{prefix}knockdowns_absorbed_per_min'] = fighter_round_stats.get('knockdowns_absorbed_per_min', np.nan)
+            features[f'{prefix}clinch_strike_defense'] = fighter_round_stats.get('clinch_strike_defense', np.nan)
+            features[f'{prefix}ground_strike_defense'] = fighter_round_stats.get('ground_strike_defense', np.nan)
+            features[f'{prefix}distance_strike_defense'] = fighter_round_stats.get('distance_strike_defense', np.nan)
 
             # Days since last fight
             if len(fighter_fights) > 0:
@@ -575,7 +648,18 @@ class FeatureEngineering:
                 'striking_accuracy': np.nan,
                 'takedown_accuracy': np.nan,
                 'control_time': np.nan,
-                'strikes_per_round': np.nan
+                'strikes_per_round': np.nan,
+                'takedown_defense': np.nan,
+                'striking_defense': np.nan,
+                'strikes_landed_per_min': np.nan,
+                'strikes_absorbed_per_min': np.nan,
+                'knockdowns_per_fight': np.nan,
+                'head_strike_pct': np.nan,
+                'body_strike_pct': np.nan,
+                'leg_strike_pct': np.nan,
+                'avg_takedowns_attempted': np.nan,
+                'submission_attempts_per_fight': np.nan,
+                'reversals_per_fight': np.nan
             }
 
         # Get all rounds for this fighter
@@ -590,10 +674,21 @@ class FeatureEngineering:
                 'striking_accuracy': np.nan,
                 'takedown_accuracy': np.nan,
                 'control_time': np.nan,
-                'strikes_per_round': np.nan
+                'strikes_per_round': np.nan,
+                'takedown_defense': np.nan,
+                'striking_defense': np.nan,
+                'strikes_landed_per_min': np.nan,
+                'strikes_absorbed_per_min': np.nan,
+                'knockdowns_per_fight': np.nan,
+                'head_strike_pct': np.nan,
+                'body_strike_pct': np.nan,
+                'leg_strike_pct': np.nan,
+                'avg_takedowns_attempted': np.nan,
+                'submission_attempts_per_fight': np.nan,
+                'reversals_per_fight': np.nan
             }
 
-        # Calculate averages
+        # Calculate existing averages
         total_strikes_att = fighter_rounds['strikes_att'].sum()
         total_strikes_succ = fighter_rounds['strikes_succ'].sum()
         striking_accuracy = total_strikes_succ / total_strikes_att if total_strikes_att > 0 else np.nan
@@ -617,12 +712,515 @@ class FeatureEngineering:
         avg_control_time = np.mean(control_times) if control_times else np.nan
         avg_strikes_per_round = fighter_rounds['strikes_succ'].mean()
 
+        # NEW FEATURES
+
+        # 1. Takedown Defense (calculate from opponent's attempts against this fighter)
+        # Get opponent rounds from same fights
+        opponent_rounds = rounds_df[
+            (rounds_df['fight_id'].isin(fight_ids)) &
+            (rounds_df['fighter_id'] != fighter_id)
+        ]
+        if len(opponent_rounds) > 0:
+            opp_takedown_att = opponent_rounds['takedown_att'].sum()
+            opp_takedown_succ = opponent_rounds['takedown_succ'].sum()
+            # Defense = blocked / attempted = (att - succ) / att
+            takedown_defense = (opp_takedown_att - opp_takedown_succ) / opp_takedown_att if opp_takedown_att > 0 else np.nan
+        else:
+            takedown_defense = np.nan
+
+        # 2. Striking Defense (calculate from opponent's strikes against this fighter)
+        if len(opponent_rounds) > 0:
+            opp_strikes_att = opponent_rounds['strikes_att'].sum()
+            opp_strikes_succ = opponent_rounds['strikes_succ'].sum()
+            # Defense = blocked / attempted = (att - succ) / att
+            striking_defense = (opp_strikes_att - opp_strikes_succ) / opp_strikes_att if opp_strikes_att > 0 else np.nan
+        else:
+            striking_defense = np.nan
+
+        # 3. Strikes Landed Per Minute (assuming 5-minute rounds)
+        total_rounds = len(fighter_rounds)
+        total_minutes = total_rounds * 5  # Each round is 5 minutes
+        strikes_landed_per_min = total_strikes_succ / total_minutes if total_minutes > 0 else np.nan
+
+        # 4. Strikes Absorbed Per Minute (opponent's successful strikes)
+        if len(opponent_rounds) > 0:
+            opp_total_strikes_succ = opponent_rounds['strikes_succ'].sum()
+            strikes_absorbed_per_min = opp_total_strikes_succ / total_minutes if total_minutes > 0 else np.nan
+        else:
+            strikes_absorbed_per_min = np.nan
+
+        # 5. Knockdowns Per Fight
+        total_knockdowns = fighter_rounds['knockdowns'].sum()
+        num_fights = len(fight_ids)
+        knockdowns_per_fight = total_knockdowns / num_fights if num_fights > 0 else 0
+
+        # 6. Strike Target Distribution (head/body/leg percentages)
+        total_head_succ = fighter_rounds['head_strikes_succ'].sum()
+        total_body_succ = fighter_rounds['body_strikes_succ'].sum()
+        total_leg_succ = fighter_rounds['leg_strikes_succ'].sum()
+        total_targeted_strikes = total_head_succ + total_body_succ + total_leg_succ
+
+        head_strike_pct = total_head_succ / total_targeted_strikes if total_targeted_strikes > 0 else np.nan
+        body_strike_pct = total_body_succ / total_targeted_strikes if total_targeted_strikes > 0 else np.nan
+        leg_strike_pct = total_leg_succ / total_targeted_strikes if total_targeted_strikes > 0 else np.nan
+
+        # 7. Average Takedowns Attempted Per Fight
+        avg_takedowns_attempted = total_takedown_att / num_fights if num_fights > 0 else 0
+
+        # 8. Submission Attempts Per Fight
+        total_sub_attempts = fighter_rounds['submission_att'].sum()
+        submission_attempts_per_fight = total_sub_attempts / num_fights if num_fights > 0 else 0
+
+        # 9. Reversals Per Fight
+        total_reversals = fighter_rounds['reversals'].sum()
+        reversals_per_fight = total_reversals / num_fights if num_fights > 0 else 0
+
+        # NEW ABSORPTION & DEFENSE FEATURES
+
+        # 10. Strike absorption by zone (per minute)
+        if len(opponent_rounds) > 0:
+            opp_head_strikes = opponent_rounds['head_strikes_succ'].sum()
+            opp_body_strikes = opponent_rounds['body_strikes_succ'].sum()
+            opp_leg_strikes = opponent_rounds['leg_strikes_succ'].sum()
+
+            head_strikes_absorbed_per_min = opp_head_strikes / total_minutes if total_minutes > 0 else np.nan
+            body_strikes_absorbed_per_min = opp_body_strikes / total_minutes if total_minutes > 0 else np.nan
+            leg_strikes_absorbed_per_min = opp_leg_strikes / total_minutes if total_minutes > 0 else np.nan
+
+            # 11. Head absorption rate (% of absorbed strikes to head - KO vulnerability indicator)
+            total_absorbed_strikes = opp_head_strikes + opp_body_strikes + opp_leg_strikes
+            head_absorption_rate = opp_head_strikes / total_absorbed_strikes if total_absorbed_strikes > 0 else np.nan
+
+            # 12. Knockdown absorption metrics
+            opp_knockdowns = opponent_rounds['knockdowns'].sum()
+            knockdowns_absorbed_per_fight = opp_knockdowns / num_fights if num_fights > 0 else 0
+            knockdowns_absorbed_per_min = opp_knockdowns / total_minutes if total_minutes > 0 else np.nan
+
+            # 13. Position-specific strike defense
+            # Clinch defense
+            opp_clinch_att = opponent_rounds['clinch_strikes_att'].sum()
+            opp_clinch_succ = opponent_rounds['clinch_strikes_succ'].sum()
+            clinch_strike_defense = (opp_clinch_att - opp_clinch_succ) / opp_clinch_att if opp_clinch_att > 0 else np.nan
+
+            # Ground defense
+            opp_ground_att = opponent_rounds['ground_strikes_att'].sum()
+            opp_ground_succ = opponent_rounds['ground_strikes_succ'].sum()
+            ground_strike_defense = (opp_ground_att - opp_ground_succ) / opp_ground_att if opp_ground_att > 0 else np.nan
+
+            # Distance defense
+            opp_distance_att = opponent_rounds['distance_strikes_att'].sum()
+            opp_distance_succ = opponent_rounds['distance_strikes_succ'].sum()
+            distance_strike_defense = (opp_distance_att - opp_distance_succ) / opp_distance_att if opp_distance_att > 0 else np.nan
+        else:
+            head_strikes_absorbed_per_min = np.nan
+            body_strikes_absorbed_per_min = np.nan
+            leg_strikes_absorbed_per_min = np.nan
+            head_absorption_rate = np.nan
+            knockdowns_absorbed_per_fight = 0
+            knockdowns_absorbed_per_min = np.nan
+            clinch_strike_defense = np.nan
+            ground_strike_defense = np.nan
+            distance_strike_defense = np.nan
+
         return {
             'striking_accuracy': striking_accuracy,
             'takedown_accuracy': takedown_accuracy,
             'control_time': avg_control_time,
-            'strikes_per_round': avg_strikes_per_round
+            'strikes_per_round': avg_strikes_per_round,
+            'takedown_defense': takedown_defense,
+            'striking_defense': striking_defense,
+            'strikes_landed_per_min': strikes_landed_per_min,
+            'strikes_absorbed_per_min': strikes_absorbed_per_min,
+            'knockdowns_per_fight': knockdowns_per_fight,
+            'head_strike_pct': head_strike_pct,
+            'body_strike_pct': body_strike_pct,
+            'leg_strike_pct': leg_strike_pct,
+            'avg_takedowns_attempted': avg_takedowns_attempted,
+            'submission_attempts_per_fight': submission_attempts_per_fight,
+            'reversals_per_fight': reversals_per_fight,
+            # New absorption features
+            'head_strikes_absorbed_per_min': head_strikes_absorbed_per_min,
+            'body_strikes_absorbed_per_min': body_strikes_absorbed_per_min,
+            'leg_strikes_absorbed_per_min': leg_strikes_absorbed_per_min,
+            'head_absorption_rate': head_absorption_rate,
+            'knockdowns_absorbed_per_fight': knockdowns_absorbed_per_fight,
+            'knockdowns_absorbed_per_min': knockdowns_absorbed_per_min,
+            'clinch_strike_defense': clinch_strike_defense,
+            'ground_strike_defense': ground_strike_defense,
+            'distance_strike_defense': distance_strike_defense
         }
+
+    def _create_damage_history_features(
+        self,
+        current_fight: pd.Series,
+        fighter_1: pd.Series,
+        fighter_2: pd.Series,
+        all_fights: pd.DataFrame,
+        rounds_df: pd.DataFrame
+    ) -> Dict:
+        """Create damage accumulation and chin erosion features."""
+        features = {}
+
+        for i, fighter_id in enumerate([current_fight['fighter_1'], current_fight['fighter_2']], 1):
+            prefix = f'fighter_{i}_'
+
+            # Get fighter's historical fights (before current fight)
+            fighter_fights = all_fights[
+                (all_fights['fighter_1'] == fighter_id) |
+                (all_fights['fighter_2'] == fighter_id)
+            ].copy()
+
+            if len(fighter_fights) == 0:
+                # No historical data - set defaults
+                features[f'{prefix}recent_knockdowns_absorbed_l3'] = 0
+                features[f'{prefix}recent_ko_losses'] = 0
+                features[f'{prefix}recent_sub_losses'] = 0
+                features[f'{prefix}cumulative_head_strikes_absorbed'] = np.nan
+                features[f'{prefix}days_since_last_ko_loss'] = np.nan
+                continue
+
+            # Sort by date
+            fighter_fights = fighter_fights.sort_values('event_date')
+
+            # 1. Recent knockdowns absorbed (last 3 fights)
+            last_3_fights = fighter_fights.tail(3)
+            recent_knockdowns = 0
+            for _, fight in last_3_fights.iterrows():
+                fight_id = fight['fight_id']
+                # Get opponent's knockdowns in this fight
+                opponent_rounds = rounds_df[
+                    (rounds_df['fight_id'] == fight_id) &
+                    (rounds_df['fighter_id'] != fighter_id)
+                ]
+                if len(opponent_rounds) > 0:
+                    recent_knockdowns += opponent_rounds['knockdowns'].sum()
+            features[f'{prefix}recent_knockdowns_absorbed_l3'] = recent_knockdowns
+
+            # 2. Recent KO/TKO losses (last 5 fights)
+            last_5_fights = fighter_fights.tail(5)
+            ko_losses = 0
+            for _, fight in last_5_fights.iterrows():
+                if 'result' in fight and 'winner' in fight:
+                    if fight['result'] in ['KO/TKO'] and fight['winner'] != fighter_id:
+                        ko_losses += 1
+            features[f'{prefix}recent_ko_losses'] = ko_losses
+
+            # 3. Recent submission losses (last 5 fights)
+            sub_losses = 0
+            for _, fight in last_5_fights.iterrows():
+                if 'result' in fight and 'winner' in fight:
+                    if fight['result'] == 'Submission' and fight['winner'] != fighter_id:
+                        sub_losses += 1
+            features[f'{prefix}recent_sub_losses'] = sub_losses
+
+            # 4. Cumulative head strikes absorbed (career)
+            fight_ids = fighter_fights['fight_id'].tolist()
+            opponent_rounds = rounds_df[
+                (rounds_df['fight_id'].isin(fight_ids)) &
+                (rounds_df['fighter_id'] != fighter_id)
+            ]
+            if len(opponent_rounds) > 0:
+                cumulative_head_strikes = opponent_rounds['head_strikes_succ'].sum()
+                features[f'{prefix}cumulative_head_strikes_absorbed'] = cumulative_head_strikes
+            else:
+                features[f'{prefix}cumulative_head_strikes_absorbed'] = np.nan
+
+            # 5. Days since last KO/TKO loss
+            ko_loss_fights = fighter_fights[
+                (fighter_fights['result'] == 'KO/TKO') &
+                (fighter_fights['winner'] != fighter_id)
+            ]
+            if len(ko_loss_fights) > 0:
+                last_ko_loss_date = pd.to_datetime(ko_loss_fights.iloc[-1]['event_date'])
+                current_date = pd.to_datetime(current_fight['event_date'])
+                days_since = (current_date - last_ko_loss_date).days
+                features[f'{prefix}days_since_last_ko_loss'] = days_since
+            else:
+                features[f'{prefix}days_since_last_ko_loss'] = np.nan
+
+        return features
+
+    def _create_pace_sustainability_features(
+        self,
+        current_fight: pd.Series,
+        fighter_1: pd.Series,
+        fighter_2: pd.Series,
+        all_fights: pd.DataFrame,
+        rounds_df: pd.DataFrame
+    ) -> Dict:
+        """Create pace decay and cardio sustainability features."""
+        features = {}
+
+        for i, fighter_id in enumerate([current_fight['fighter_1'], current_fight['fighter_2']], 1):
+            prefix = f'fighter_{i}_'
+
+            # Get fighter's historical fights
+            fighter_fights = all_fights[
+                (all_fights['fighter_1'] == fighter_id) |
+                (all_fights['fighter_2'] == fighter_id)
+            ].copy()
+
+            if len(fighter_fights) == 0:
+                features[f'{prefix}round_1_strike_output'] = np.nan
+                features[f'{prefix}round_2_strike_output'] = np.nan
+                features[f'{prefix}round_3_plus_strike_output'] = np.nan
+                features[f'{prefix}output_decay_rate'] = np.nan
+                features[f'{prefix}strike_rate_delta_r1_to_r3'] = np.nan
+                features[f'{prefix}pace_consistency_score'] = np.nan
+                continue
+
+            # Get all rounds for this fighter
+            fight_ids = fighter_fights['fight_id'].tolist()
+            fighter_rounds = rounds_df[
+                (rounds_df['fight_id'].isin(fight_ids)) &
+                (rounds_df['fighter_id'] == fighter_id)
+            ]
+
+            if len(fighter_rounds) == 0:
+                features[f'{prefix}round_1_strike_output'] = np.nan
+                features[f'{prefix}round_2_strike_output'] = np.nan
+                features[f'{prefix}round_3_plus_strike_output'] = np.nan
+                features[f'{prefix}output_decay_rate'] = np.nan
+                features[f'{prefix}strike_rate_delta_r1_to_r3'] = np.nan
+                features[f'{prefix}pace_consistency_score'] = np.nan
+                continue
+
+            # Group by round number
+            r1_rounds = fighter_rounds[fighter_rounds['round'] == 1]
+            r2_rounds = fighter_rounds[fighter_rounds['round'] == 2]
+            r3_plus_rounds = fighter_rounds[fighter_rounds['round'] >= 3]
+
+            # 1. Average strike output by round
+            round_1_output = r1_rounds['strikes_succ'].mean() if len(r1_rounds) > 0 else np.nan
+            round_2_output = r2_rounds['strikes_succ'].mean() if len(r2_rounds) > 0 else np.nan
+            round_3_plus_output = r3_plus_rounds['strikes_succ'].mean() if len(r3_plus_rounds) > 0 else np.nan
+
+            features[f'{prefix}round_1_strike_output'] = round_1_output
+            features[f'{prefix}round_2_strike_output'] = round_2_output
+            features[f'{prefix}round_3_plus_strike_output'] = round_3_plus_output
+
+            # 2. Output decay rate (percentage drop from R1 to R3+)
+            if pd.notna(round_1_output) and pd.notna(round_3_plus_output) and round_1_output > 0:
+                decay_rate = (round_1_output - round_3_plus_output) / round_1_output
+                features[f'{prefix}output_decay_rate'] = decay_rate
+            else:
+                features[f'{prefix}output_decay_rate'] = np.nan
+
+            # 3. Strike rate delta (strikes per minute change from R1 to R3)
+            # Each round is 5 minutes
+            if pd.notna(round_1_output) and pd.notna(round_3_plus_output):
+                r1_per_min = round_1_output / 5.0
+                r3_per_min = round_3_plus_output / 5.0
+                features[f'{prefix}strike_rate_delta_r1_to_r3'] = r1_per_min - r3_per_min
+            else:
+                features[f'{prefix}strike_rate_delta_r1_to_r3'] = np.nan
+
+            # 4. Pace consistency score (inverse of variance across rounds)
+            # Lower variance = more consistent pace
+            round_outputs = []
+            if pd.notna(round_1_output):
+                round_outputs.append(round_1_output)
+            if pd.notna(round_2_output):
+                round_outputs.append(round_2_output)
+            if pd.notna(round_3_plus_output):
+                round_outputs.append(round_3_plus_output)
+
+            if len(round_outputs) >= 2:
+                variance = np.var(round_outputs)
+                # Normalize by mean to get coefficient of variation
+                mean_output = np.mean(round_outputs)
+                if mean_output > 0:
+                    consistency = 1 / (1 + variance / mean_output)  # Higher = more consistent
+                    features[f'{prefix}pace_consistency_score'] = consistency
+                else:
+                    features[f'{prefix}pace_consistency_score'] = np.nan
+            else:
+                features[f'{prefix}pace_consistency_score'] = np.nan
+
+        return features
+
+    def _create_late_round_features(
+        self,
+        current_fight: pd.Series,
+        fighter_1: pd.Series,
+        fighter_2: pd.Series,
+        all_fights: pd.DataFrame,
+        rounds_df: pd.DataFrame
+    ) -> Dict:
+        """Create late-round performance and cardio mismatch features."""
+        features = {}
+
+        for i, fighter_id in enumerate([current_fight['fighter_1'], current_fight['fighter_2']], 1):
+            prefix = f'fighter_{i}_'
+
+            # Get fighter's historical fights
+            fighter_fights = all_fights[
+                (all_fights['fighter_1'] == fighter_id) |
+                (all_fights['fighter_2'] == fighter_id)
+            ].copy()
+
+            if len(fighter_fights) == 0:
+                features[f'{prefix}win_rate_rounds_3_plus'] = np.nan
+                features[f'{prefix}finish_rate_late_rounds'] = np.nan
+                features[f'{prefix}late_round_win_rate_high_pace'] = np.nan
+                features[f'{prefix}late_round_win_rate_low_pace'] = np.nan
+                continue
+
+            # Sort by date
+            fighter_fights = fighter_fights.sort_values('event_date')
+
+            # 1. Win rate in fights that reached round 3+
+            long_fights = fighter_fights[fighter_fights['num_rounds'] >= 3]
+            if len(long_fights) > 0:
+                wins_in_long_fights = 0
+                for _, fight in long_fights.iterrows():
+                    if 'winner' in fight and pd.notna(fight['winner']):
+                        if fight['winner'] == fighter_id:
+                            wins_in_long_fights += 1
+                features[f'{prefix}win_rate_rounds_3_plus'] = wins_in_long_fights / len(long_fights)
+            else:
+                features[f'{prefix}win_rate_rounds_3_plus'] = np.nan
+
+            # 2. Finish rate in late rounds (R3+)
+            finished_fights = fighter_fights[
+                (fighter_fights['result'].isin(['KO/TKO', 'Submission'])) &
+                (fighter_fights['winner'] == fighter_id)
+            ]
+            if len(finished_fights) > 0:
+                late_finishes = len(finished_fights[finished_fights['finish_round'] >= 3])
+                features[f'{prefix}finish_rate_late_rounds'] = late_finishes / len(finished_fights)
+            else:
+                features[f'{prefix}finish_rate_late_rounds'] = np.nan
+
+            # 3. Late-round win rate conditional on R1 pace
+            # Get fighter's round stats
+            fight_ids = fighter_fights['fight_id'].tolist()
+            fighter_rounds = rounds_df[
+                (rounds_df['fight_id'].isin(fight_ids)) &
+                (rounds_df['fighter_id'] == fighter_id)
+            ]
+
+            if len(fighter_rounds) > 0:
+                # Calculate median R1 output
+                r1_rounds = fighter_rounds[fighter_rounds['round'] == 1]
+                if len(r1_rounds) > 0:
+                    median_r1_output = r1_rounds['strikes_succ'].median()
+
+                    # Classify each fight as high or low R1 pace
+                    high_pace_fights = []
+                    low_pace_fights = []
+
+                    for _, fight in long_fights.iterrows():
+                        fight_r1 = r1_rounds[r1_rounds['fight_id'] == fight['fight_id']]
+                        if len(fight_r1) > 0:
+                            r1_output = fight_r1.iloc[0]['strikes_succ']
+                            if r1_output >= median_r1_output:
+                                high_pace_fights.append(fight)
+                            else:
+                                low_pace_fights.append(fight)
+
+                    # Win rate in high-pace long fights
+                    if len(high_pace_fights) > 0:
+                        wins_high_pace = sum(
+                            1 for fight in high_pace_fights
+                            if 'winner' in fight and fight['winner'] == fighter_id
+                        )
+                        features[f'{prefix}late_round_win_rate_high_pace'] = wins_high_pace / len(high_pace_fights)
+                    else:
+                        features[f'{prefix}late_round_win_rate_high_pace'] = np.nan
+
+                    # Win rate in low-pace long fights
+                    if len(low_pace_fights) > 0:
+                        wins_low_pace = sum(
+                            1 for fight in low_pace_fights
+                            if 'winner' in fight and fight['winner'] == fighter_id
+                        )
+                        features[f'{prefix}late_round_win_rate_low_pace'] = wins_low_pace / len(low_pace_fights)
+                    else:
+                        features[f'{prefix}late_round_win_rate_low_pace'] = np.nan
+                else:
+                    features[f'{prefix}late_round_win_rate_high_pace'] = np.nan
+                    features[f'{prefix}late_round_win_rate_low_pace'] = np.nan
+            else:
+                features[f'{prefix}late_round_win_rate_high_pace'] = np.nan
+                features[f'{prefix}late_round_win_rate_low_pace'] = np.nan
+
+        return features
+
+    def _create_fatigue_defense_features(
+        self,
+        current_fight: pd.Series,
+        fighter_1: pd.Series,
+        fighter_2: pd.Series,
+        all_fights: pd.DataFrame,
+        rounds_df: pd.DataFrame
+    ) -> Dict:
+        """Create takedown defense under fatigue features."""
+        features = {}
+
+        for i, fighter_id in enumerate([current_fight['fighter_1'], current_fight['fighter_2']], 1):
+            prefix = f'fighter_{i}_'
+
+            # Get fighter's historical fights
+            fighter_fights = all_fights[
+                (all_fights['fighter_1'] == fighter_id) |
+                (all_fights['fighter_2'] == fighter_id)
+            ].copy()
+
+            if len(fighter_fights) == 0:
+                features[f'{prefix}td_defense_round_1'] = np.nan
+                features[f'{prefix}td_defense_rounds_2_3'] = np.nan
+                features[f'{prefix}td_defense_degradation'] = np.nan
+                continue
+
+            # Get all rounds for this fighter
+            fight_ids = fighter_fights['fight_id'].tolist()
+
+            # Get opponent's takedown attempts against this fighter
+            opponent_rounds = rounds_df[
+                (rounds_df['fight_id'].isin(fight_ids)) &
+                (rounds_df['fighter_id'] != fighter_id)
+            ]
+
+            if len(opponent_rounds) == 0:
+                features[f'{prefix}td_defense_round_1'] = np.nan
+                features[f'{prefix}td_defense_rounds_2_3'] = np.nan
+                features[f'{prefix}td_defense_degradation'] = np.nan
+                continue
+
+            # Split by round number
+            r1_opponent = opponent_rounds[opponent_rounds['round'] == 1]
+            r2_3_opponent = opponent_rounds[opponent_rounds['round'].isin([2, 3])]
+
+            # 1. TD defense in round 1
+            if len(r1_opponent) > 0:
+                r1_td_att = r1_opponent['takedown_att'].sum()
+                r1_td_succ = r1_opponent['takedown_succ'].sum()
+                td_defense_r1 = (r1_td_att - r1_td_succ) / r1_td_att if r1_td_att > 0 else np.nan
+                features[f'{prefix}td_defense_round_1'] = td_defense_r1
+            else:
+                features[f'{prefix}td_defense_round_1'] = np.nan
+                td_defense_r1 = np.nan
+
+            # 2. TD defense in rounds 2-3 (fatigue rounds)
+            if len(r2_3_opponent) > 0:
+                r2_3_td_att = r2_3_opponent['takedown_att'].sum()
+                r2_3_td_succ = r2_3_opponent['takedown_succ'].sum()
+                td_defense_r2_3 = (r2_3_td_att - r2_3_td_succ) / r2_3_td_att if r2_3_td_att > 0 else np.nan
+                features[f'{prefix}td_defense_rounds_2_3'] = td_defense_r2_3
+            else:
+                features[f'{prefix}td_defense_rounds_2_3'] = np.nan
+                td_defense_r2_3 = np.nan
+
+            # 3. TD defense degradation (fatigue impact)
+            # Positive = defense gets worse in later rounds
+            if pd.notna(td_defense_r1) and pd.notna(td_defense_r2_3):
+                degradation = td_defense_r1 - td_defense_r2_3
+                features[f'{prefix}td_defense_degradation'] = degradation
+            else:
+                features[f'{prefix}td_defense_degradation'] = np.nan
+
+        return features
 
     def _create_matchup_features(self, fighter_1: pd.Series, fighter_2: pd.Series) -> Dict:
         """Create matchup-specific features."""
@@ -1034,7 +1632,9 @@ class FeatureEngineering:
         self,
         fighter_1: pd.Series,
         fighter_2: pd.Series,
-        all_fights: pd.DataFrame
+        all_fights: pd.DataFrame,
+        rounds_df: pd.DataFrame = None,
+        current_fight: pd.Series = None
     ) -> Dict:
         """Create advanced matchup and style clash features."""
         features = {}
@@ -1068,7 +1668,199 @@ class FeatureEngineering:
         # It was the #1 SHAP feature in every single prediction, suppressing other features
         # Keep individual win percentages in fighter records instead
 
+        # NEW: Enhanced style matchup features (Phase 6)
+        if rounds_df is not None and current_fight is not None:
+            # Get historical stats for both fighters
+            f1_stats = self._get_fighter_style_stats(current_fight['fighter_1'], all_fights, rounds_df, current_fight)
+            f2_stats = self._get_fighter_style_stats(current_fight['fighter_2'], all_fights, rounds_df, current_fight)
+
+            # 1. Southpaw vs Orthodox head strike advantage (differential)
+            if f1_stance == 'Southpaw' and f2_stance == 'Orthodox':
+                # Fighter 1 has southpaw advantage - calculate differential
+                f1_head_rate = f1_stats.get('head_strike_pct', 0) or 0
+                f2_head_rate = f2_stats.get('head_strike_pct', 0) or 0
+                features['southpaw_vs_orthodox_head_strike_advantage'] = f1_head_rate - f2_head_rate
+            elif f1_stance == 'Orthodox' and f2_stance == 'Southpaw':
+                # Fighter 2 has southpaw advantage
+                f2_head_rate = f2_stats.get('head_strike_pct', 0) or 0
+                f1_head_rate = f1_stats.get('head_strike_pct', 0) or 0
+                features['southpaw_vs_orthodox_head_strike_advantage'] = f1_head_rate - f2_head_rate
+            else:
+                features['southpaw_vs_orthodox_head_strike_advantage'] = 0
+
+            # 2. Striker anti-wrestling score (F1 strike defense vs F2 TD offense)
+            f1_strike_def = f1_stats.get('striking_defense', 0) or 0
+            f2_td_acc = f2_stats.get('takedown_accuracy', 0) or 0
+            f2_strike_def = f2_stats.get('striking_defense', 0) or 0
+            f1_td_acc = f1_stats.get('takedown_accuracy', 0) or 0
+            features['striker_anti_wrestling_score'] = (f1_strike_def - f2_td_acc) - (f2_strike_def - f1_td_acc)
+
+            # 3. Submission threat differential
+            f1_sub_rate = f1_stats.get('submission_rate', 0) or 0
+            f2_sub_rate = f2_stats.get('submission_rate', 0) or 0
+            features['submission_threat_differential'] = f1_sub_rate - f2_sub_rate
+
+            # 4. Grappler vs striker mismatch (TD accuracy differential)
+            features['grappler_vs_striker_mismatch'] = f1_td_acc - f2_td_acc
+
+            # 5. Clinch fighter vs distance fighter (clinch strike rate differential)
+            f1_clinch_rate = f1_stats.get('clinch_strike_rate', 0) or 0
+            f2_clinch_rate = f2_stats.get('clinch_strike_rate', 0) or 0
+            f1_distance_rate = f1_stats.get('distance_strike_rate', 0) or 0
+            f2_distance_rate = f2_stats.get('distance_strike_rate', 0) or 0
+            features['clinch_fighter_vs_distance_fighter'] = (f1_clinch_rate - f1_distance_rate) - (f2_clinch_rate - f2_distance_rate)
+
+            # 6. Pressure style effectiveness (strike volume vs opponent defense)
+            f1_strike_volume = f1_stats.get('strikes_landed_per_min', 0) or 0
+            f2_strike_volume = f2_stats.get('strikes_landed_per_min', 0) or 0
+            features['pressure_style_effectiveness'] = (f1_strike_volume - f2_strike_def) - (f2_strike_volume - f1_strike_def)
+
+            # 7. Defensive specialist score (defensive rating differential)
+            f1_td_def = f1_stats.get('takedown_defense', 0) or 0
+            f2_td_def = f2_stats.get('takedown_defense', 0) or 0
+            f1_defensive = (f1_strike_def + f1_td_def) / 2
+            f2_defensive = (f2_strike_def + f2_td_def) / 2
+            features['defensive_specialist_score'] = f1_defensive - f2_defensive
+
+            # 8. Finishing threat differential (finish rate comparison)
+            f1_ko_rate = f1_stats.get('ko_rate', 0) or 0
+            f2_ko_rate = f2_stats.get('ko_rate', 0) or 0
+            f1_finish_rate = f1_ko_rate + f1_sub_rate
+            f2_finish_rate = f2_ko_rate + f2_sub_rate
+            features['finishing_threat_differential'] = f1_finish_rate - f2_finish_rate
+
+        else:
+            # No round data available - set defaults
+            features['southpaw_vs_orthodox_head_strike_advantage'] = 0
+            features['striker_anti_wrestling_score'] = 0
+            features['submission_threat_differential'] = 0
+            features['grappler_vs_striker_mismatch'] = 0
+            features['clinch_fighter_vs_distance_fighter'] = 0
+            features['pressure_style_effectiveness'] = 0
+            features['defensive_specialist_score'] = 0
+            features['finishing_threat_differential'] = 0
+
         return features
+
+    def _get_fighter_style_stats(
+        self,
+        fighter_id: str,
+        all_fights: pd.DataFrame,
+        rounds_df: pd.DataFrame,
+        current_fight: pd.Series
+    ) -> Dict:
+        """
+        Calculate style statistics for a fighter from their historical data.
+        Used by enhanced matchup features.
+        """
+        # Get fighter's historical fights (before current fight)
+        fighter_fights = all_fights[
+            ((all_fights['fighter_1'] == fighter_id) | (all_fights['fighter_2'] == fighter_id)) &
+            (pd.to_datetime(all_fights['event_date']) < pd.to_datetime(current_fight['event_date']))
+        ].copy()
+
+        if len(fighter_fights) == 0:
+            return {
+                'head_strike_pct': 0,
+                'striking_defense': 0,
+                'takedown_accuracy': 0,
+                'takedown_defense': 0,
+                'submission_rate': 0,
+                'ko_rate': 0,
+                'clinch_strike_rate': 0,
+                'distance_strike_rate': 0,
+                'strikes_landed_per_min': 0
+            }
+
+        # Get round data
+        fight_ids = fighter_fights['fight_id'].tolist()
+        fighter_rounds = rounds_df[
+            (rounds_df['fight_id'].isin(fight_ids)) &
+            (rounds_df['fighter_id'] == fighter_id)
+        ]
+
+        opponent_rounds = rounds_df[
+            (rounds_df['fight_id'].isin(fight_ids)) &
+            (rounds_df['fighter_id'] != fighter_id)
+        ]
+
+        stats = {}
+
+        # Calculate statistics from round data
+        if len(fighter_rounds) > 0:
+            # Head strike percentage
+            total_head = fighter_rounds['head_strikes_succ'].sum()
+            total_body = fighter_rounds['body_strikes_succ'].sum()
+            total_leg = fighter_rounds['leg_strikes_succ'].sum()
+            total_strikes = total_head + total_body + total_leg
+            stats['head_strike_pct'] = total_head / total_strikes if total_strikes > 0 else 0
+
+            # Striking defense (from opponent rounds)
+            if len(opponent_rounds) > 0:
+                opp_strikes_att = opponent_rounds['strikes_att'].sum()
+                opp_strikes_succ = opponent_rounds['strikes_succ'].sum()
+                stats['striking_defense'] = (opp_strikes_att - opp_strikes_succ) / opp_strikes_att if opp_strikes_att > 0 else 0
+            else:
+                stats['striking_defense'] = 0
+
+            # Takedown accuracy
+            total_td_att = fighter_rounds['takedown_att'].sum()
+            total_td_succ = fighter_rounds['takedown_succ'].sum()
+            stats['takedown_accuracy'] = total_td_succ / total_td_att if total_td_att > 0 else 0
+
+            # Takedown defense (from opponent rounds)
+            if len(opponent_rounds) > 0:
+                opp_td_att = opponent_rounds['takedown_att'].sum()
+                opp_td_succ = opponent_rounds['takedown_succ'].sum()
+                stats['takedown_defense'] = (opp_td_att - opp_td_succ) / opp_td_att if opp_td_att > 0 else 0
+            else:
+                stats['takedown_defense'] = 0
+
+            # Clinch and distance strike rates
+            total_clinch = fighter_rounds['clinch_strikes_succ'].sum()
+            total_distance = fighter_rounds['distance_strikes_succ'].sum()
+            total_rounds = len(fighter_rounds)
+            stats['clinch_strike_rate'] = total_clinch / total_rounds if total_rounds > 0 else 0
+            stats['distance_strike_rate'] = total_distance / total_rounds if total_rounds > 0 else 0
+
+            # Strikes landed per minute
+            # Assume 5 minutes per round as we don't have exact time data
+            total_minutes = len(fighter_rounds) * 5
+            if total_minutes > 0:
+                stats['strikes_landed_per_min'] = total_strikes / total_minutes
+            else:
+                stats['strikes_landed_per_min'] = 0
+
+        else:
+            stats['head_strike_pct'] = 0
+            stats['striking_defense'] = 0
+            stats['takedown_accuracy'] = 0
+            stats['takedown_defense'] = 0
+            stats['clinch_strike_rate'] = 0
+            stats['distance_strike_rate'] = 0
+            stats['strikes_landed_per_min'] = 0
+
+        # Calculate finish rates from fight data
+        total_fights = len(fighter_fights)
+        if total_fights > 0:
+            # Submission rate
+            sub_wins = len(fighter_fights[
+                (fighter_fights['result'] == 'Submission') &
+                (fighter_fights['winner'] == fighter_id)
+            ])
+            stats['submission_rate'] = sub_wins / total_fights
+
+            # KO rate
+            ko_wins = len(fighter_fights[
+                (fighter_fights['result'] == 'KO/TKO') &
+                (fighter_fights['winner'] == fighter_id)
+            ])
+            stats['ko_rate'] = ko_wins / total_fights
+        else:
+            stats['submission_rate'] = 0
+            stats['ko_rate'] = 0
+
+        return stats
 
     def _create_opponent_quality_features(
         self,

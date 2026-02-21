@@ -1,217 +1,248 @@
 {% extends "base.html" %}
 
-{% block title %}Fight Details - {{ fighter_1.full_name if fighter_1.full_name else 'Fighter 1' }} vs {{ fighter_2.full_name if fighter_2.full_name else 'Fighter 2' }}{% endblock %}
+{% block title %}{{ fighter_1.full_name if fighter_1.full_name else 'Fighter 1' }} vs {{ fighter_2.full_name if fighter_2.full_name else 'Fighter 2' }}{% endblock %}
 
 {% block content %}
 <!-- Back Button -->
-<div class="row mb-3">
-    <div class="col">
-        <a href="/" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
+<div class="mb-4">
+    <a href="/" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+</div>
+
+<!-- Compact Fight Header -->
+<div class="fight-detail-header">
+    <div class="fighter-header-section fighter-left">
+        <div class="fighter-header-name">
+            {{ fighter_1.full_name if fighter_1.full_name else 'Fighter 1' }}
+        </div>
+        {% if fighter_1.fighter_nickname %}
+        <div class="fighter-header-nickname">"{{ fighter_1.fighter_nickname }}"</div>
+        {% endif %}
+        <div class="fighter-header-record">
+            {{ fighter_1.fighter_w if fighter_1.fighter_w else 0 }}-{{ fighter_1.fighter_l if fighter_1.fighter_l else 0 }}-{{ fighter_1.fighter_d if fighter_1.fighter_d else 0 }}
+        </div>
+    </div>
+
+    <div class="vs-section">
+        <div class="vs-badge">VS</div>
+        <div class="fight-meta-compact">
+            <div class="meta-item">
+                <i class="fas fa-calendar"></i> {{ fight.event_date if fight.event_date else 'TBA' }}
+            </div>
+            <div class="meta-item">
+                <i class="fas fa-trophy"></i> {{ fight.event_name if fight.event_name else 'Unknown Event' }}
+            </div>
+            <div class="meta-item">
+                <span class="badge badge-secondary">{{ fight.weight_class_name if fight.weight_class_name else 'Unknown' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="fighter-header-section fighter-right">
+        <div class="fighter-header-name">
+            {{ fighter_2.full_name if fighter_2.full_name else 'Fighter 2' }}
+        </div>
+        {% if fighter_2.fighter_nickname %}
+        <div class="fighter-header-nickname">"{{ fighter_2.fighter_nickname }}"</div>
+        {% endif %}
+        <div class="fighter-header-record">
+            {{ fighter_2.fighter_w if fighter_2.fighter_w else 0 }}-{{ fighter_2.fighter_l if fighter_2.fighter_l else 0 }}-{{ fighter_2.fighter_d if fighter_2.fighter_d else 0 }}
+        </div>
     </div>
 </div>
 
-<!-- Fight Header -->
-<div class="row mb-4">
-    <div class="col">
-        <div class="card fight-header">
-            <div class="card-body text-center">
-                <h2 class="mb-3">
-                    <span class="fighter-name">{{ fighter_1.full_name if fighter_1.full_name else 'Fighter 1' }}</span>
-                    <span class="vs-text mx-4">VS</span>
-                    <span class="fighter-name">{{ fighter_2.full_name if fighter_2.full_name else 'Fighter 2' }}</span>
-                </h2>
-                <div class="fight-meta">
-                    <span class="badge bg-dark me-2">
-                        <i class="fas fa-calendar"></i> {{ fight.event_name if fight.event_name else 'Unknown Event' }}
-                    </span>
-                    <span class="badge bg-dark me-2">
-                        <i class="fas fa-clock"></i> {{ fight.event_date if fight.event_date else 'TBA' }}
-                    </span>
-                    <span class="badge bg-secondary">
-                        <i class="fas fa-weight"></i> {{ fight.weight_class_name if fight.weight_class_name else 'Unknown Weight Class' }}
-                    </span>
+<!-- Prediction Banner -->
+<div class="prediction-banner">
+    <div class="prediction-label">ML PREDICTION</div>
+    <div class="prediction-winner">
+        {{ fight.predicted_winner_name if fight.predicted_winner_name else 'Unknown' }}
+    </div>
+    <div class="prediction-confidence">
+        {% set confidence = fight.confidence * 100 if fight.confidence else 0 %}
+        {% if confidence > 70 %}
+            <span class="confidence-badge high">{{ "%.1f"|format(confidence) }}%</span>
+        {% elif confidence > 50 %}
+            <span class="confidence-badge medium">{{ "%.1f"|format(confidence) }}%</span>
+        {% else %}
+            <span class="confidence-badge low">{{ "%.1f"|format(confidence) }}%</span>
+        {% endif %}
+        CONFIDENCE
+    </div>
+</div>
+
+<!-- Enhanced Fighter Profiles -->
+<div class="fighter-profiles-grid">
+    <!-- Fighter 1 Card -->
+    <div class="fighter-profile-card">
+        <div class="fighter-profile-header">
+            <h3>{{ fighter_1.full_name if fighter_1.full_name else 'Fighter 1' }}</h3>
+        </div>
+        <div class="fighter-profile-body">
+            <!-- Key Stats Row -->
+            <div class="key-stats-row">
+                <div class="key-stat">
+                    <div class="key-stat-label">Win Streak</div>
+                    <div class="key-stat-value">{{ fighter_1_stats.win_streak if fighter_1_stats and fighter_1_stats.win_streak else 'N/A' }}</div>
+                </div>
+                <div class="key-stat">
+                    <div class="key-stat-label">Finish Rate</div>
+                    <div class="key-stat-value">{{ "%.0f"|format(fighter_1_stats.finish_rate) if fighter_1_stats and fighter_1_stats.finish_rate else 'N/A' }}%</div>
+                </div>
+                <div class="key-stat">
+                    <div class="key-stat-label">Avg Duration</div>
+                    <div class="key-stat-value">{{ "%.1f"|format(fighter_1_stats.avg_duration) if fighter_1_stats and fighter_1_stats.avg_duration else 'N/A' }}m</div>
+                </div>
+            </div>
+
+            <!-- Last 5 Fights (Most Recent First) -->
+            {% if fighter_1_stats and fighter_1_stats.last_5_fights %}
+            <div class="last-fights-section">
+                <div class="last-fights-label">Last 5 Fights (Most Recent → Oldest)</div>
+                <div class="last-fights-indicators">
+                    {% for fight in fighter_1_stats.last_5_fights %}
+                        <div class="fight-result-box {{ 'win' if fight.result == 'W' else 'loss' if fight.result == 'L' else 'draw' }}">
+                            <span class="fight-result-outcome">{{ fight.result }}</span>
+                            <span class="fight-result-method">{{ fight.method }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Physical Stats -->
+            <div class="physical-stats-compact">
+                <div class="physical-stat-item">
+                    <span class="stat-icon"><i class="fas fa-arrows-alt-v"></i></span>
+                    <span class="stat-label">Height:</span>
+                    <span class="stat-value">{{ "%.0f"|format(fighter_1.fighter_height_cm) if fighter_1.fighter_height_cm else 'N/A' }} cm</span>
+                </div>
+                <div class="physical-stat-item">
+                    <span class="stat-icon"><i class="fas fa-weight"></i></span>
+                    <span class="stat-label">Weight:</span>
+                    <span class="stat-value">{{ "%.0f"|format(fighter_1.fighter_weight_lbs) if fighter_1.fighter_weight_lbs else 'N/A' }} lbs</span>
+                </div>
+                <div class="physical-stat-item">
+                    <span class="stat-icon"><i class="fas fa-arrows-alt-h"></i></span>
+                    <span class="stat-label">Reach:</span>
+                    <span class="stat-value">{{ "%.0f"|format(fighter_1.fighter_reach_cm) if fighter_1.fighter_reach_cm else 'N/A' }} cm</span>
+                </div>
+                <div class="physical-stat-item">
+                    <span class="stat-icon"><i class="fas fa-shoe-prints"></i></span>
+                    <span class="stat-label">Stance:</span>
+                    <span class="stat-value">{{ fighter_1.fighter_stance if fighter_1.fighter_stance else 'N/A' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fighter 2 Card -->
+    <div class="fighter-profile-card">
+        <div class="fighter-profile-header">
+            <h3>{{ fighter_2.full_name if fighter_2.full_name else 'Fighter 2' }}</h3>
+        </div>
+        <div class="fighter-profile-body">
+            <!-- Key Stats Row -->
+            <div class="key-stats-row">
+                <div class="key-stat">
+                    <div class="key-stat-label">Win Streak</div>
+                    <div class="key-stat-value">{{ fighter_2_stats.win_streak if fighter_2_stats and fighter_2_stats.win_streak else 'N/A' }}</div>
+                </div>
+                <div class="key-stat">
+                    <div class="key-stat-label">Finish Rate</div>
+                    <div class="key-stat-value">{{ "%.0f"|format(fighter_2_stats.finish_rate) if fighter_2_stats and fighter_2_stats.finish_rate else 'N/A' }}%</div>
+                </div>
+                <div class="key-stat">
+                    <div class="key-stat-label">Avg Duration</div>
+                    <div class="key-stat-value">{{ "%.1f"|format(fighter_2_stats.avg_duration) if fighter_2_stats and fighter_2_stats.avg_duration else 'N/A' }}m</div>
+                </div>
+            </div>
+
+            <!-- Last 5 Fights (Most Recent First) -->
+            {% if fighter_2_stats and fighter_2_stats.last_5_fights %}
+            <div class="last-fights-section">
+                <div class="last-fights-label">Last 5 Fights (Most Recent → Oldest)</div>
+                <div class="last-fights-indicators">
+                    {% for fight in fighter_2_stats.last_5_fights %}
+                        <div class="fight-result-box {{ 'win' if fight.result == 'W' else 'loss' if fight.result == 'L' else 'draw' }}">
+                            <span class="fight-result-outcome">{{ fight.result }}</span>
+                            <span class="fight-result-method">{{ fight.method }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Physical Stats -->
+            <div class="physical-stats-compact">
+                <div class="physical-stat-item">
+                    <span class="stat-icon"><i class="fas fa-arrows-alt-v"></i></span>
+                    <span class="stat-label">Height:</span>
+                    <span class="stat-value">{{ "%.0f"|format(fighter_2.fighter_height_cm) if fighter_2.fighter_height_cm else 'N/A' }} cm</span>
+                </div>
+                <div class="physical-stat-item">
+                    <span class="stat-icon"><i class="fas fa-weight"></i></span>
+                    <span class="stat-label">Weight:</span>
+                    <span class="stat-value">{{ "%.0f"|format(fighter_2.fighter_weight_lbs) if fighter_2.fighter_weight_lbs else 'N/A' }} lbs</span>
+                </div>
+                <div class="physical-stat-item">
+                    <span class="stat-icon"><i class="fas fa-arrows-alt-h"></i></span>
+                    <span class="stat-label">Reach:</span>
+                    <span class="stat-value">{{ "%.0f"|format(fighter_2.fighter_reach_cm) if fighter_2.fighter_reach_cm else 'N/A' }} cm</span>
+                </div>
+                <div class="physical-stat-item">
+                    <span class="stat-icon"><i class="fas fa-shoe-prints"></i></span>
+                    <span class="stat-label">Stance:</span>
+                    <span class="stat-value">{{ fighter_2.fighter_stance if fighter_2.fighter_stance else 'N/A' }}</span>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Prediction Summary -->
-<div class="row mb-4">
-    <div class="col-md-6 offset-md-3">
-        <div class="card prediction-card">
-            <div class="card-header bg-danger text-white text-center">
-                <h5 class="mb-0"><i class="fas fa-trophy"></i> Prediction</h5>
-            </div>
-            <div class="card-body text-center">
-                <h4 class="mb-3">
-                    <strong>{{ fight.predicted_winner_name if fight.predicted_winner_name else 'Unknown' }}</strong>
-                </h4>
-                <p class="text-muted mb-2">Confidence Level</p>
-                <h2 class="text-danger mb-0">{{ "%.1f"|format(fight.confidence * 100) if fight.confidence else 'N/A' }}%</h2>
-            </div>
-        </div>
+<!-- Stats Comparison Section -->
+{% if comparison_stats %}
+<div class="card">
+    <div class="card-header">
+        <h5>
+            <i class="fas fa-balance-scale"></i>
+            Head-to-Head Stats Comparison
+        </h5>
     </div>
-</div>
-
-<!-- Win Probability Chart -->
-{% if charts.win_probability %}
-<div class="row mb-4">
-    <div class="col">
-        <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Win Probability</h5>
-            </div>
-            <div class="card-body">
-                <div id="winProbabilityChart"></div>
-            </div>
+    <div class="card-body">
+        <!-- Fighter Names Header -->
+        <div class="comparison-header">
+            <div class="comparison-fighter-name left">{{ fighter_1.full_name if fighter_1.full_name else 'Fighter 1' }}</div>
+            <div class="comparison-center-label">ADVANTAGE</div>
+            <div class="comparison-fighter-name right">{{ fighter_2.full_name if fighter_2.full_name else 'Fighter 2' }}</div>
         </div>
-    </div>
-</div>
-{% endif %}
 
-<!-- Fighter Comparison -->
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card fighter-card">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-user"></i> {{ fighter_1.full_name if fighter_1.full_name else 'Fighter 1' }}
-                </h5>
-            </div>
-            <div class="card-body">
-                <h6 class="text-muted mb-3">Physical Stats</h6>
-                <table class="table table-sm">
-                    <tr>
-                        <td><strong>Height:</strong></td>
-                        <td>{{ "%.1f"|format(fighter_1.fighter_height_cm) if fighter_1.fighter_height_cm else 'N/A' }} cm</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Weight:</strong></td>
-                        <td>{{ "%.1f"|format(fighter_1.fighter_weight_lbs) if fighter_1.fighter_weight_lbs else 'N/A' }} lbs</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Reach:</strong></td>
-                        <td>{{ "%.1f"|format(fighter_1.fighter_reach_cm) if fighter_1.fighter_reach_cm else 'N/A' }} cm</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Stance:</strong></td>
-                        <td>{{ fighter_1.fighter_stance if fighter_1.fighter_stance else 'N/A' }}</td>
-                    </tr>
-                </table>
-
-                <h6 class="text-muted mb-3 mt-4">Career Record</h6>
-                <table class="table table-sm">
-                    <tr>
-                        <td><strong>Wins:</strong></td>
-                        <td class="text-success"><strong>{{ fighter_1.fighter_w if fighter_1.fighter_w else 0 }}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Losses:</strong></td>
-                        <td class="text-danger"><strong>{{ fighter_1.fighter_l if fighter_1.fighter_l else 0 }}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Draws:</strong></td>
-                        <td>{{ fighter_1.fighter_d if fighter_1.fighter_d else 0 }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Record:</strong></td>
-                        <td>
-                            <strong>
-                                {{ fighter_1.fighter_w if fighter_1.fighter_w else 0 }}-{{ fighter_1.fighter_l if fighter_1.fighter_l else 0 }}-{{ fighter_1.fighter_d if fighter_1.fighter_d else 0 }}
-                            </strong>
-                        </td>
-                    </tr>
-                </table>
-
-                {% if fighter_1.fighter_nickname %}
-                <div class="mt-3">
-                    <span class="badge bg-secondary">
-                        <i class="fas fa-quote-left"></i> {{ fighter_1.fighter_nickname }}
-                    </span>
+        <!-- Stats Comparison Grid -->
+        <div class="stats-comparison-grid">
+            {% for stat in comparison_stats %}
+            <div class="comparison-stat-row">
+                <div class="comparison-stat-label">{{ stat.label }}</div>
+                <div class="comparison-stat-bars">
+                    <div class="comparison-bar-left">
+                        <div class="comparison-bar-fill fighter-1-bar" style="width: {{ stat.fighter_1_pct }}%;">
+                            <span class="comparison-bar-value">{{ stat.fighter_1_value }}</span>
+                        </div>
+                    </div>
+                    <div class="comparison-center-diff">
+                        {% if stat.difference %}
+                            <span class="diff-badge {{ 'fighter-1-advantage' if stat.advantage == 1 else 'fighter-2-advantage' }}">
+                                {{ stat.difference }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="comparison-bar-right">
+                        <div class="comparison-bar-fill fighter-2-bar" style="width: {{ stat.fighter_2_pct }}%;">
+                            <span class="comparison-bar-value">{{ stat.fighter_2_value }}</span>
+                        </div>
+                    </div>
                 </div>
-                {% endif %}
             </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card fighter-card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-user"></i> {{ fighter_2.full_name if fighter_2.full_name else 'Fighter 2' }}
-                </h5>
-            </div>
-            <div class="card-body">
-                <h6 class="text-muted mb-3">Physical Stats</h6>
-                <table class="table table-sm">
-                    <tr>
-                        <td><strong>Height:</strong></td>
-                        <td>{{ "%.1f"|format(fighter_2.fighter_height_cm) if fighter_2.fighter_height_cm else 'N/A' }} cm</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Weight:</strong></td>
-                        <td>{{ "%.1f"|format(fighter_2.fighter_weight_lbs) if fighter_2.fighter_weight_lbs else 'N/A' }} lbs</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Reach:</strong></td>
-                        <td>{{ "%.1f"|format(fighter_2.fighter_reach_cm) if fighter_2.fighter_reach_cm else 'N/A' }} cm</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Stance:</strong></td>
-                        <td>{{ fighter_2.fighter_stance if fighter_2.fighter_stance else 'N/A' }}</td>
-                    </tr>
-                </table>
-
-                <h6 class="text-muted mb-3 mt-4">Career Record</h6>
-                <table class="table table-sm">
-                    <tr>
-                        <td><strong>Wins:</strong></td>
-                        <td class="text-success"><strong>{{ fighter_2.fighter_w if fighter_2.fighter_w else 0 }}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Losses:</strong></td>
-                        <td class="text-danger"><strong>{{ fighter_2.fighter_l if fighter_2.fighter_l else 0 }}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Draws:</strong></td>
-                        <td>{{ fighter_2.fighter_d if fighter_2.fighter_d else 0 }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Record:</strong></td>
-                        <td>
-                            <strong>
-                                {{ fighter_2.fighter_w if fighter_2.fighter_w else 0 }}-{{ fighter_2.fighter_l if fighter_2.fighter_l else 0 }}-{{ fighter_2.fighter_d if fighter_2.fighter_d else 0 }}
-                            </strong>
-                        </td>
-                    </tr>
-                </table>
-
-                {% if fighter_2.fighter_nickname %}
-                <div class="mt-3">
-                    <span class="badge bg-secondary">
-                        <i class="fas fa-quote-left"></i> {{ fighter_2.fighter_nickname }}
-                    </span>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Physical Stats Chart -->
-{% if charts.physical %}
-<div class="row mb-4">
-    <div class="col">
-        <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0"><i class="fas fa-ruler"></i> Physical Attributes Comparison</h5>
-            </div>
-            <div class="card-body">
-                <div id="physicalChart"></div>
-            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -219,91 +250,34 @@
 
 <!-- Fighting Style Radar Chart -->
 {% if charts.style_radar %}
-<div class="row mb-4">
-    <div class="col">
-        <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0"><i class="fas fa-fist-raised"></i> Fighting Style Analysis</h5>
-            </div>
-            <div class="card-body">
-                <div id="styleRadarChart"></div>
-            </div>
-        </div>
+<div class="card mt-4">
+    <div class="card-header">
+        <h5>
+            <i class="fas fa-fist-raised"></i>
+            Fighting Style Analysis
+        </h5>
     </div>
-</div>
-{% endif %}
-
-<!-- Advanced Features -->
-{% if advanced_features %}
-<div class="row mb-4">
-    <div class="col">
-        <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0"><i class="fas fa-brain"></i> Advanced ML Features</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-3">
-                    These are some of the 100+ advanced features used by the machine learning model to make predictions.
-                </p>
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="text-muted">Key Features</h6>
-                        <ul class="list-unstyled">
-                            {% for key, value in advanced_features.items() %}
-                                {% if loop.index <= 250 and key not in ['fight_id', 'event_id', 'fighter_1', 'fighter_2', 'winner', 'event_date'] %}
-                                <li><small><strong>{{ key }}:</strong> {{ "%.3f"|format(value) if value is number else value }}</small></li>
-                                {% endif %}
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i>
-                            <strong>Feature Categories:</strong>
-                            <ul class="mb-0 mt-2 small">
-                                <li>Momentum indicators (win streaks, recent performance)</li>
-                                <li>Fighting style metrics (KO/submission rates)</li>
-                                <li>Career stage analysis (peak, rising, declining)</li>
-                                <li>Opponent quality ratings</li>
-                                <li>Physical advantages</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="card-body">
+        <div id="styleRadarChart"></div>
     </div>
 </div>
 {% endif %}
 
 <!-- SHAP Analysis -->
 {% if charts.shap_waterfall %}
-<div class="row">
-    <div class="col">
-        <div class="card">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Prediction Explanation (SHAP Analysis)</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-3">
-                    This chart shows the top 15 features that influenced this prediction. Positive values (red) push the prediction toward
-                    <strong>{{ fighter_1.full_name if fighter_1.full_name else 'Fighter 1' }}</strong>,
-                    while negative values (blue) push toward
-                    <strong>{{ fighter_2.full_name if fighter_2.full_name else 'Fighter 2' }}</strong>.
-                </p>
-                <div id="shapWaterfallChart"></div>
-                <div class="alert alert-secondary mt-3">
-                    <i class="fas fa-lightbulb"></i>
-                    <strong>How to Read This Chart:</strong>
-                    <ul class="mb-0 mt-2 small">
-                        <li><strong>Base Value:</strong> The model's baseline prediction before considering this specific fight</li>
-                        <li><strong>SHAP Values:</strong> How much each feature pushes the prediction higher or lower</li>
-                        <li><strong>Red bars:</strong> Features that increase the probability of {{ fighter_1.full_name if fighter_1.full_name else 'Fighter 1' }} winning</li>
-                        <li><strong>Blue bars:</strong> Features that increase the probability of {{ fighter_2.full_name if fighter_2.full_name else 'Fighter 2' }} winning</li>
-                        <li>Longer bars = stronger influence on the prediction</li>
-                    </ul>
-                </div>
-            </div>
+<div class="card mt-4">
+    <div class="card-header">
+        <h5>
+            <i class="fas fa-chart-line"></i>
+            Prediction Explanation (SHAP Analysis)
+        </h5>
+    </div>
+    <div class="card-body">
+
+        <div id="shapWaterfallChart"></div>
+        <div class="info-box mt-3">
+            <i class="fas fa-lightbulb"></i>
+            <strong>How to Read:</strong> Longer bars indicate stronger influence on the prediction. The model analyzes 137+ features to determine the most likely outcome.
         </div>
     </div>
 </div>
@@ -312,24 +286,27 @@
 
 {% block extra_js %}
 <script>
-    // Render charts if available
-    {% if charts.win_probability %}
-    var winProbData = {{ charts.win_probability | safe }};
-    Plotly.newPlot('winProbabilityChart', winProbData.data, winProbData.layout, {responsive: true});
-    {% endif %}
-
-    {% if charts.physical %}
-    var physicalData = {{ charts.physical | safe }};
-    Plotly.newPlot('physicalChart', physicalData.data, physicalData.layout, {responsive: true});
-    {% endif %}
+    // Render charts with dark theme
+    const darkThemeLayout = {
+        paper_bgcolor: 'var(--bg-elevated)',
+        plot_bgcolor: 'var(--bg-secondary)',
+        font: {
+            color: 'var(--text-primary)',
+            family: 'Inter, system-ui, -apple-system, sans-serif'
+        }
+    };
 
     {% if charts.style_radar %}
     var styleData = {{ charts.style_radar | safe }};
+    // Apply dark theme to layout
+    styleData.layout = Object.assign(styleData.layout, darkThemeLayout);
     Plotly.newPlot('styleRadarChart', styleData.data, styleData.layout, {responsive: true});
     {% endif %}
 
     {% if charts.shap_waterfall %}
     var shapData = {{ charts.shap_waterfall | safe }};
+    // Apply dark theme to layout
+    shapData.layout = Object.assign(shapData.layout, darkThemeLayout);
     Plotly.newPlot('shapWaterfallChart', shapData.data, shapData.layout, {responsive: true});
     {% endif %}
 </script>

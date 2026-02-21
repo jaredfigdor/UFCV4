@@ -900,7 +900,7 @@ class UFCPredictor:
                 feature_contributions.sort(key=lambda x: abs(x[1]), reverse=True)
 
                 # Take top 15
-                top_features = feature_contributions[:15]
+                top_features = feature_contributions[:30]
 
                 for feature_name, shap_value in top_features:
                     shap_df_list.append({

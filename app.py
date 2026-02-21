@@ -230,53 +230,21 @@ def scrape_completed_event_fights(data_folder: Path, event_ids: list[str]) -> No
     logger.info(f" Scraping complete fight data for {len(event_ids)} newly completed events...")
 
     try:
-        # Initialize scraper
+        # Simply re-scrape all completed events to get the new fight data
+        # This is efficient because the scraper only scrapes new fights (not already in fight_data.csv)
         scraper = UFCScraper(
             data_folder=data_folder,
             n_sessions=1,  # Single session for Windows compatibility
             delay=0.5
         )
 
-        # Get event URLs for the specific events
-        from ufcscraper.event_scraper import EventScraper
-        event_urls = [EventScraper.url_from_id(event_id) for event_id in event_ids]
+        logger.info(" Scraping fights from completed events...")
+        scraper.fight_scraper.scrape_fights(get_all_events=False)
 
-        # Get fight URLs from these specific events
-        fight_urls = scraper.event_scraper.get_fight_urls_from_event_urls(event_urls)
-        logger.info(f"Found {len(fight_urls)} fights to scrape for these events")
-
-        # Filter to only fights we don't already have
-        existing_fight_ids = set(scraper.fight_scraper.data['fight_id'].tolist())
-        existing_urls = set(map(scraper.fight_scraper.url_from_id, existing_fight_ids))
-        urls_to_scrape = set(fight_urls) - existing_urls
-
-        if len(urls_to_scrape) == 0:
-            logger.info(" All fights for these events already scraped")
-            return
-
-        logger.info(f" Scraping {len(urls_to_scrape)} new fights with complete results...")
-
-        # Scrape the fights (this will get all 17 columns with results)
-        import csv
-        from ufcscraper.utils import links_to_soups
-        from ufcscraper.fight_scraper import RoundsHandler
-
-        rounds_handler = RoundsHandler(data_folder)
-
-        with open(scraper.fight_scraper.data_file, "a", encoding='utf-8') as f_fights:
-            writer = csv.writer(f_fights)
-            for i, (url, soup) in enumerate(
-                links_to_soups(list(urls_to_scrape), 1, 0.5)
-            ):
-                scraper.fight_scraper.scrape_fight(writer, rounds_handler, url, soup)
-                if (i + 1) % 5 == 0:
-                    logger.info(f"Scraped {i+1}/{len(urls_to_scrape)} fights...")
-
-        logger.info(f" Successfully scraped {len(urls_to_scrape)} fights with complete results")
-
-        # Update fighter data for any new fighters in these fights
         logger.info(" Updating fighter data...")
         scraper.fighter_scraper.scrape_fighters()
+
+        logger.info(f" Successfully scraped fight data for newly completed events")
 
     except Exception as e:
         logger.error(f"Error scraping completed event fights: {e}")
@@ -499,22 +467,19 @@ def _enhance_predictions_with_context(predictions: pd.DataFrame, data_folder: Pa
                 enhanced['event_date'] = enhanced['event_id'].map(lambda x: event_data.get(x, ('', 'Unknown Date'))[1])
 
         # Clean up weight class names (must match encoding in feature_engineering.py)
-        if 'weight_class' in enhanced.columns:
-            # Reverse mapping from numeric encoding
-            # NOTE: These are encoded without gender - gender is inferred from fighters
-            weight_class_map = {
-                1.0: 'Flyweight',
-                2.0: 'Bantamweight',
-                3.0: 'Featherweight',
-                4.0: 'Lightweight',
-                4.5: 'Catch Weight',
-                5.0: 'Welterweight',
-                6.0: 'Middleweight',
-                7.0: 'Light Heavyweight',
-                8.0: 'Heavyweight',
-                8.5: 'Open Weight',
-            }
-            enhanced['weight_class_name'] = enhanced['weight_class'].map(weight_class_map).fillna('Unknown')
+        # NOTE: We need to look up the original weight class from the source data
+        # because the numeric encoding loses information about Women's vs Men's divisions
+        if 'fight_id' in enhanced.columns:
+            # Load upcoming fight data to get original weight classes
+            upcoming_fights_file = data_folder / "upcoming_fight_data.csv"
+            if upcoming_fights_file.exists():
+                upcoming_fights_df = pd.read_csv(upcoming_fights_file)
+                weight_class_lookup = dict(zip(upcoming_fights_df['fight_id'], upcoming_fights_df['weight_class']))
+                enhanced['weight_class_name'] = enhanced['fight_id'].map(weight_class_lookup).fillna('Unknown')
+            else:
+                enhanced['weight_class_name'] = 'Unknown'
+        else:
+            enhanced['weight_class_name'] = 'Unknown'
 
         # Create readable winner names
         enhanced['predicted_winner_name'] = enhanced.apply(
@@ -571,10 +536,12 @@ def main() -> None:
 
         # Step 3: Move completed events
         logger.info(" Step 3: Moving completed events...")
-        moved_events_count, _ = move_completed_events(data_folder)
+        moved_events_count, moved_event_ids = move_completed_events(data_folder)
 
-        # Note: No need for Step 3.5 to scrape completed fights
-        # Step 2's completed scraper already handles events that moved from upcoming to completed
+        # Step 3.5: Scrape fight details for newly completed events
+        if moved_events_count > 0:
+            logger.info(" Step 3.5: Scraping complete fight data for newly completed events...")
+            scrape_completed_event_fights(data_folder, moved_event_ids)
 
         # Step 4: Build updated ML datasets
         logger.info(" Step 4: Building ML datasets...")

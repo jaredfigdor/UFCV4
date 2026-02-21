@@ -174,6 +174,248 @@ def load_fight_details(fight_id: str) -> Optional[Dict[str, Any]]:
     return result
 
 
+def get_enhanced_fighter_stats(fighter_id: str, advanced_features: Dict[str, Any], fighter_num: int) -> Dict[str, Any]:
+    """
+    Extract enhanced fighter stats for display.
+
+    Args:
+        fighter_id: Fighter ID
+        advanced_features: Dictionary of advanced features from dataset
+        fighter_num: Fighter number (1 or 2)
+
+    Returns:
+        Dictionary with win_streak, finish_rate, avg_duration, last_5_fights
+    """
+    stats = {
+        'win_streak': 'N/A',
+        'finish_rate': 0,
+        'avg_duration': 0,
+        'last_5_fights': []
+    }
+
+    prefix = f'fighter_{fighter_num}'
+
+    # Look for win streak - check multiple possible column names
+    for streak_col in [f'{prefix}_win_streak', f'{prefix}_current_streak', 'win_streak']:
+        if streak_col in advanced_features:
+            streak = advanced_features[streak_col]
+            if pd.notna(streak):
+                stats['win_streak'] = int(streak) if streak >= 0 else f"{int(abs(streak))}L"
+                break
+
+    # Calculate finish rate from last 5 finish rate or KO + Sub rates
+    finish_rate_key = f'{prefix}_last_5_finish_rate'
+    if finish_rate_key in advanced_features:
+        finish_rate = advanced_features.get(finish_rate_key, 0)
+        if pd.notna(finish_rate):
+            stats['finish_rate'] = finish_rate * 100
+    else:
+        # Fallback: try KO + Sub rates
+        ko_rate_key = f'{prefix}_ko_rate'
+        sub_rate_key = f'{prefix}_sub_rate'
+        if ko_rate_key in advanced_features and sub_rate_key in advanced_features:
+            ko_rate = advanced_features.get(ko_rate_key, 0) or 0
+            sub_rate = advanced_features.get(sub_rate_key, 0) or 0
+            stats['finish_rate'] = (ko_rate + sub_rate) * 100
+
+    # Average fight duration - check for last 5 avg first
+    duration_key = f'{prefix}_last_5_avg_fight_time'
+    if duration_key in advanced_features:
+        duration = advanced_features.get(duration_key, 0)
+        if pd.notna(duration) and duration > 0:
+            # Convert seconds to minutes
+            stats['avg_duration'] = duration / 60.0
+
+    # Last 5 fights with method (most recent first)
+    data_folder = Path(app.config['DATA_FOLDER'])
+    fight_file = data_folder / "fight_data.csv"
+    event_file = data_folder / "event_data.csv"
+
+    if fight_file.exists():
+        try:
+            fights_df = pd.read_csv(fight_file, encoding='utf-8')
+
+            # Load event data to get event dates
+            if event_file.exists():
+                events_df = pd.read_csv(event_file, encoding='utf-8')
+                # Merge to get event dates
+                fights_df = fights_df.merge(
+                    events_df[['event_id', 'event_date']],
+                    on='event_id',
+                    how='left'
+                )
+
+            # Get fights where this fighter participated
+            fighter_fights = fights_df[
+                (fights_df['fighter_1'] == fighter_id) |
+                (fights_df['fighter_2'] == fighter_id)
+            ].copy()
+
+            # Sort by event date (most recent first)
+            if 'event_date' in fighter_fights.columns:
+                fighter_fights['event_date'] = pd.to_datetime(fighter_fights['event_date'], errors='coerce')
+                fighter_fights = fighter_fights.sort_values('event_date', ascending=False)
+
+            # Get last 5 results with method
+            last_5 = []
+            for _, fight_row in fighter_fights.head(5).iterrows():
+                winner = fight_row.get('winner', '')
+                result_method = fight_row.get('result', '')
+
+                # Determine result (W/L/D)
+                if pd.isna(winner) or winner == '':
+                    continue
+
+                if winner == fighter_id:
+                    result = 'W'
+                elif winner == 'Draw' or winner == 'draw':
+                    result = 'D'
+                else:
+                    result = 'L'
+
+                # Determine method abbreviation from 'result' column
+                method_abbrev = 'DEC'  # Default
+                if pd.notna(result_method):
+                    method_str = str(result_method).lower()
+                    if 'ko' in method_str or 'tko' in method_str:
+                        method_abbrev = 'KO'
+                    elif 'submission' in method_str or 'sub' in method_str:
+                        method_abbrev = 'SUB'
+                    elif 'decision' in method_str:
+                        method_abbrev = 'DEC'
+                    elif 'dq' in method_str:
+                        method_abbrev = 'DQ'
+                    elif 'nc' in method_str:
+                        method_abbrev = 'NC'
+
+                last_5.append({
+                    'result': result,
+                    'method': method_abbrev
+                })
+
+            stats['last_5_fights'] = last_5
+        except Exception as e:
+            logger.warning(f"Could not load last 5 fights: {e}")
+
+    return stats
+
+
+def create_fighter_comparison_stats(advanced_features: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    Create horizontal comparison stats for display.
+
+    Returns list of dicts with: label, fighter_1_value, fighter_2_value, fighter_1_pct, fighter_2_pct
+    """
+    comparison_stats = []
+
+    # Define stats to compare (feature name, display label, format)
+    stats_to_compare = [
+        ('avg_striking_accuracy', 'Striking Accuracy', 'percent'),
+        ('strikes_landed_per_min', 'Strikes Landed/Min', 'decimal'),
+        ('strikes_absorbed_per_min', 'Strikes Absorbed/Min', 'decimal'),
+        ('striking_defense', 'Striking Defense', 'percent'),
+        ('avg_takedown_accuracy', 'Takedown Accuracy', 'percent'),
+        ('takedown_defense', 'Takedown Defense', 'percent'),
+        ('knockdowns_per_fight', 'Knockdowns/Fight', 'decimal'),
+        ('avg_control_time', 'Avg Control Time (sec)', 'decimal'),
+        ('avg_strikes_per_round', 'Strikes Per Round', 'decimal'),
+        ('head_strike_pct', 'Head Strike %', 'percent'),
+        ('body_strike_pct', 'Body Strike %', 'percent'),
+        ('leg_strike_pct', 'Leg Strike %', 'percent'),
+        ('last_5_win_rate', 'Last 5 Win Rate', 'percent'),
+        ('last_5_finish_rate', 'Last 5 Finish Rate', 'percent'),
+    ]
+
+    for feature, label, format_type in stats_to_compare:
+        f1_key = f'fighter_1_{feature}'
+        f2_key = f'fighter_2_{feature}'
+
+        if f1_key in advanced_features and f2_key in advanced_features:
+            f1_val = advanced_features.get(f1_key, 0)
+            f2_val = advanced_features.get(f2_key, 0)
+
+            # Convert None/NaN to 0
+            if pd.isna(f1_val):
+                f1_val = 0
+            if pd.isna(f2_val):
+                f2_val = 0
+
+            # Skip if both values are 0
+            if f1_val == 0 and f2_val == 0:
+                continue
+
+            # Format values for display
+            if format_type == 'percent':
+                f1_display = f"{f1_val * 100:.1f}%"
+                f2_display = f"{f2_val * 100:.1f}%"
+            elif format_type == 'percent_raw':
+                # Already in percentage format (0-100)
+                f1_display = f"{f1_val:.1f}%"
+                f2_display = f"{f2_val:.1f}%"
+            elif format_type == 'decimal':
+                f1_display = f"{f1_val:.2f}"
+                f2_display = f"{f2_val:.2f}"
+            elif format_type == 'decimal_min':
+                f1_display = f"{f1_val:.1f} min"
+                f2_display = f"{f2_val:.1f} min"
+            else:  # int
+                f1_display = f"{int(f1_val)}" if f1_val >= 0 else f"{int(abs(f1_val))}L"
+                f2_display = f"{int(f2_val)}" if f2_val >= 0 else f"{int(abs(f2_val))}L"
+
+            # Calculate percentages for bar width
+            abs_f1 = abs(f1_val)
+            abs_f2 = abs(f2_val)
+            total = abs_f1 + abs_f2
+
+            if total > 0:
+                f1_pct = (abs_f1 / total) * 100
+                f2_pct = (abs_f2 / total) * 100
+            else:
+                f1_pct = 50
+                f2_pct = 50
+
+            # Calculate actual value difference
+            diff_val = abs(f1_val - f2_val)
+
+            if f1_val > f2_val:
+                advantage = 1  # Fighter 1
+                # Format difference based on type
+                if format_type == 'percent':
+                    diff_display = f"+{diff_val * 100:.1f}%"
+                elif format_type == 'decimal':
+                    diff_display = f"+{diff_val:.2f}"
+                elif format_type == 'decimal_min':
+                    diff_display = f"+{diff_val:.1f} min"
+                else:
+                    diff_display = f"+{int(diff_val)}"
+            elif f2_val > f1_val:
+                advantage = 2  # Fighter 2
+                # Format difference based on type
+                if format_type == 'percent':
+                    diff_display = f"+{diff_val * 100:.1f}%"
+                elif format_type == 'decimal':
+                    diff_display = f"+{diff_val:.2f}"
+                elif format_type == 'decimal_min':
+                    diff_display = f"+{diff_val:.1f} min"
+                else:
+                    diff_display = f"+{int(diff_val)}"
+            else:
+                advantage = 0
+                diff_display = "EVEN"
+
+            comparison_stats.append({
+                'label': label,
+                'fighter_1_value': f1_display,
+                'fighter_2_value': f2_display,
+                'fighter_1_pct': min(f1_pct, 100),
+                'fighter_2_pct': min(f2_pct, 100),
+                'difference': diff_display,
+                'advantage': advantage
+            })
+
+    return comparison_stats
+
+
 @app.route('/')
 def dashboard():
     """Main dashboard showing all predictions."""
@@ -286,10 +528,21 @@ def fight_detail(fight_id: str):
     if not fight_data:
         return "Fight not found", 404
 
-    # Create comparison charts
+    # Get enhanced fighter stats
+    fighter1_id = fight_data['fight'].get('fighter_1', '')
+    fighter2_id = fight_data['fight'].get('fighter_2', '')
+    advanced_features = fight_data.get('advanced_features', {})
+
+    fighter_1_stats = get_enhanced_fighter_stats(fighter1_id, advanced_features, 1)
+    fighter_2_stats = get_enhanced_fighter_stats(fighter2_id, advanced_features, 2)
+
+    # Create comparison stats
+    comparison_stats = create_fighter_comparison_stats(advanced_features)
+
+    # Create comparison charts (only style radar, no physical or win probability)
     charts = create_fight_comparison_charts(fight_data)
 
-    # Create SHAP analysis chart if available
+    # Create SHAP analysis chart if available (show 30 features)
     if fight_data.get('shap_values'):
         charts['shap_waterfall'] = create_shap_waterfall_chart(fight_data)
 
@@ -298,64 +551,20 @@ def fight_detail(fight_id: str):
         fight=fight_data['fight'],
         fighter_1=fight_data['fighter_1'],
         fighter_2=fight_data['fighter_2'],
-        advanced_features=fight_data['advanced_features'],
+        fighter_1_stats=fighter_1_stats,
+        fighter_2_stats=fighter_2_stats,
+        comparison_stats=comparison_stats,
         charts=charts,
         shap_data=fight_data.get('shap_values', [])
     )
 
 
 def create_fight_comparison_charts(fight_data: Dict[str, Any]) -> Dict[str, str]:
-    """Create comparison charts for fighter stats."""
+    """Create comparison charts for fighter stats (only style radar)."""
     charts = {}
 
     fighter1 = fight_data['fighter_1']
     fighter2 = fight_data['fighter_2']
-
-    # Physical stats comparison
-    physical_categories = ['Height (cm)', 'Weight (lbs)', 'Reach (cm)', 'Age']
-    fighter1_physical = [
-        fighter1.get('fighter_height_cm', 0),
-        fighter1.get('fighter_weight_lbs', 0),
-        fighter1.get('fighter_reach_cm', 0),
-        0  # Age calculated from DOB
-    ]
-    fighter2_physical = [
-        fighter2.get('fighter_height_cm', 0),
-        fighter2.get('fighter_weight_lbs', 0),
-        fighter2.get('fighter_reach_cm', 0),
-        0
-    ]
-
-    # Calculate ages if DOB available
-    if 'fighter_dob' in fighter1 and pd.notna(fighter1['fighter_dob']):
-        try:
-            from datetime import datetime
-            dob = pd.to_datetime(fighter1['fighter_dob'])
-            age = (datetime.now() - dob).days // 365
-            fighter1_physical[3] = age
-        except:
-            pass
-
-    if 'fighter_dob' in fighter2 and pd.notna(fighter2['fighter_dob']):
-        try:
-            from datetime import datetime
-            dob = pd.to_datetime(fighter2['fighter_dob'])
-            age = (datetime.now() - dob).days // 365
-            fighter2_physical[3] = age
-        except:
-            pass
-
-    fig = go.Figure(data=[
-        go.Bar(name=fighter1.get('full_name', 'Fighter 1'), x=physical_categories, y=fighter1_physical, marker_color='#D20A0A'),
-        go.Bar(name=fighter2.get('full_name', 'Fighter 2'), x=physical_categories, y=fighter2_physical, marker_color='#1f77b4')
-    ])
-    fig.update_layout(
-        title='Physical Attributes Comparison',
-        barmode='group',
-        template='plotly_white',
-        height=400
-    )
-    charts['physical'] = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
     # Fighting style radar chart (if advanced features available)
     advanced = fight_data.get('advanced_features', {})
@@ -387,56 +596,23 @@ def create_fight_comparison_charts(fight_data: Dict[str, Any]) -> Dict[str, str]
                 theta=style_categories,
                 fill='toself',
                 name=fighter1.get('full_name', 'Fighter 1'),
-                line_color='#D20A0A'
+                line_color='#6366f1'
             ))
             fig.add_trace(go.Scatterpolar(
                 r=fighter2_style,
                 theta=style_categories,
                 fill='toself',
                 name=fighter2.get('full_name', 'Fighter 2'),
-                line_color='#1f77b4'
+                line_color='#06b6d4'
             ))
             fig.update_layout(
                 polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
                 showlegend=True,
                 title='Fighting Style Comparison',
-                template='plotly_white',
+                template='plotly_dark',
                 height=400
             )
             charts['style_radar'] = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-
-    # Win probability gauge
-    fight = fight_data['fight']
-    if 'fighter_1_win_probability' in fight and 'fighter_2_win_probability' in fight:
-        prob1 = fight['fighter_1_win_probability']
-        prob2 = fight['fighter_2_win_probability']
-
-        fig = go.Figure()
-        fig.add_trace(go.Bar(
-            x=[prob1 * 100],
-            y=[fighter1.get('full_name', 'Fighter 1')],
-            orientation='h',
-            marker_color='#D20A0A',
-            text=f"{prob1*100:.1f}%",
-            textposition='inside'
-        ))
-        fig.add_trace(go.Bar(
-            x=[prob2 * 100],
-            y=[fighter2.get('full_name', 'Fighter 2')],
-            orientation='h',
-            marker_color='#1f77b4',
-            text=f"{prob2*100:.1f}%",
-            textposition='inside'
-        ))
-        fig.update_layout(
-            title='Win Probability',
-            xaxis_title='Probability (%)',
-            xaxis=dict(range=[0, 100]),
-            showlegend=False,
-            template='plotly_white',
-            height=200
-        )
-        charts['win_probability'] = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
     return charts
 
@@ -448,54 +624,82 @@ def create_shap_waterfall_chart(fight_data: Dict[str, Any]) -> str:
     if not shap_values:
         return None
 
-    # Extract features and values (sorted by absolute SHAP value)
-    features = [item['feature'] for item in shap_values[:15]]
-    shap_vals = [item['shap_value'] for item in shap_values[:15]]
-    base_value = shap_values[0].get('base_value', 0.5) if shap_values else 0.5
-
-    # Create color coding (red = pushes toward fighter_1, blue = pushes toward fighter_2)
-    colors = ['#D20A0A' if val > 0 else '#1f77b4' for val in shap_vals]
-
-    # Format feature names (clean up for display)
-    formatted_features = [feat.replace('_', ' ').title() for feat in features]
-
-    # Create horizontal bar chart
-    fig = go.Figure()
-
-    fig.add_trace(go.Bar(
-        y=formatted_features,
-        x=shap_vals,
-        orientation='h',
-        marker=dict(color=colors),
-        text=[f"{val:+.3f}" for val in shap_vals],
-        textposition='outside',
-        hovertemplate='<b>%{y}</b><br>SHAP Value: %{x:.3f}<extra></extra>'
-    ))
-
     fight = fight_data['fight']
     fighter1_name = fight_data['fighter_1'].get('full_name', 'Fighter 1')
     fighter2_name = fight_data['fighter_2'].get('full_name', 'Fighter 2')
 
+    # Extract features and values (top 15)
+    features = [item['feature'] for item in shap_values[:15]]
+    shap_vals = [item['shap_value'] for item in shap_values[:15]]
+    base_value = shap_values[0].get('base_value', 0.5) if shap_values else 0.5
+
+    # Format feature names - replace fighter_1/fighter_2 with actual names
+    formatted_features = []
+    for feat in features:
+        # Replace fighter_1 with actual fighter 1 name
+        feat_formatted = feat.replace('fighter_1_', f'{fighter1_name} - ')
+        # Replace fighter_2 with actual fighter 2 name
+        feat_formatted = feat_formatted.replace('fighter_2_', f'{fighter2_name} - ')
+        # Clean up underscores and title case
+        feat_formatted = feat_formatted.replace('_', ' ').title()
+        formatted_features.append(feat_formatted)
+
+    # Create horizontal bar chart with two traces for proper legend
+    fig = go.Figure()
+
+    # Split into positive and negative for legend
+    for i, (feat, val) in enumerate(zip(formatted_features, shap_vals)):
+        if val > 0:
+            # Positive values favor fighter 1 (indigo)
+            fig.add_trace(go.Bar(
+                y=[feat],
+                x=[val],
+                orientation='h',
+                marker=dict(color='#6366f1'),
+                text=[f"{val:+.3f}"],
+                textposition='outside',
+                hovertemplate=f'<b>{feat}</b><br>SHAP Value: {val:.3f}<extra></extra>',
+                name=f'← Favors {fighter1_name}',
+                legendgroup='fighter1',
+                showlegend=(i == 0 or (i > 0 and shap_vals[i-1] <= 0))  # Show legend once
+            ))
+        else:
+            # Negative values favor fighter 2 (cyan)
+            fig.add_trace(go.Bar(
+                y=[feat],
+                x=[val],
+                orientation='h',
+                marker=dict(color='#06b6d4'),
+                text=[f"{val:+.3f}"],
+                textposition='outside',
+                hovertemplate=f'<b>{feat}</b><br>SHAP Value: {val:.3f}<extra></extra>',
+                name=f'Favors {fighter2_name} →',
+                legendgroup='fighter2',
+                showlegend=(i == 0 or (i > 0 and shap_vals[i-1] > 0))  # Show legend once
+            ))
+
     fig.update_layout(
-        title=f'Prediction Explanation (Base Value: {base_value:.3f})',
-        xaxis_title='Impact on Prediction',
-        yaxis_title='Feature',
+        title='Top 15 Most Important Features',
+        xaxis_title='← Favors ' + fighter2_name + ' | Impact on Prediction | Favors ' + fighter1_name + ' →',
+        yaxis_title='',
         height=600,
         yaxis={'categoryorder': 'total ascending'},
-        template='plotly_white',
-        annotations=[
-            dict(
-                x=0.02, y=0.98,
-                xref='paper', yref='paper',
-                text=f'<b>Red</b> = Favors {fighter1_name}<br><b>Blue</b> = Favors {fighter2_name}',
-                showarrow=False,
-                bgcolor='white',
-                bordercolor='#ccc',
-                borderwidth=1,
-                xanchor='left',
-                yanchor='top'
-            )
-        ]
+        template='plotly_dark',
+        paper_bgcolor='#1e1e1e',
+        plot_bgcolor='#1a1a1a',
+        font=dict(color='#e5e5e5', family='Inter, system-ui, -apple-system, sans-serif'),
+        showlegend=True,
+        legend=dict(
+            orientation='h',
+            yanchor='bottom',
+            y=1.02,
+            xanchor='center',
+            x=0.5,
+            bgcolor='rgba(30, 30, 30, 0.9)',
+            bordercolor='#2a2a2a',
+            borderwidth=1
+        ),
+        barmode='overlay'
     )
 
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
