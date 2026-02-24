@@ -1,82 +1,97 @@
 fight_id,event_name,event_date,fighter_1_name,fighter_2_name,predicted_winner_name,confidence,fighter_1_win_probability,fighter_2_win_probability,weight_class_name
-6154ee95d3f4fc32,UFC Fight Night,2026-02-28,Douglas Silva de Andrade 'D Silva',Javier Reyes 'Blair',Javier Reyes 'Blair',0.82325405,0.17674597,0.82325405,Featherweight
-45ec0c5f19c9adbe,UFC Fight Night,2026-02-28,Ryan Gandra 'Problema',Jose Daniel Medina 'Chicho',Ryan Gandra 'Problema',0.803276,0.803276,0.196724,Middleweight
-c769dd861357af9f,UFC Fight Night,2026-03-14,Bolaji Oki 'The Zulu Warrior',Manoel Sousa 'Manumito',Manoel Sousa 'Manumito',0.7840282,0.21597186,0.7840282,Lightweight
-ac39c1f00ae31e58,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Alden Coria 'Cobra',Luis Gurule 'Grim',Alden Coria 'Cobra',0.7736681,0.7736681,0.22633189,Flyweight
-b40567cc87a8287f,UFC Fight Night,2026-03-14,Rinya Nakamura 'Hybred',Luan Lacerda,Rinya Nakamura 'Hybred',0.76670957,0.76670957,0.23329043,Bantamweight
-9a0ecee6e8ca173f,UFC Fight Night,2026-03-28,Alexa Grasso,Maycee Barber 'The Future',Maycee Barber 'The Future',0.76608336,0.23391664,0.76608336,Women's Flyweight
-3b76a00f5d0400eb,UFC Fight Night,2026-02-28,Santiago Luna 'BorderBoy',Angel Pacheco,Santiago Luna 'BorderBoy',0.7606093,0.7606093,0.23939067,Bantamweight
-32d371462c539bee,UFC Fight Night,2026-03-14,Luan Lacerda,Hecher Sosa 'Guanche Warrior',Hecher Sosa 'Guanche Warrior',0.7585956,0.24140443,0.7585956,Bantamweight
-689384b01b40ef5c,UFC Fight Night,2026-03-28,Chase Hooper 'The Dream',Lance Gibson Jr. 'Fearless',Chase Hooper 'The Dream',0.75858724,0.75858724,0.24141276,Lightweight
-508e622130b0a84d,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Phil Rowe 'The Fresh Prince',Jean-Paul Lebosnoyani 'Mufasa',Jean-Paul Lebosnoyani 'Mufasa',0.7519602,0.24803978,0.7519602,Welterweight
-a2955d6c7503cf88,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Donte Johnson 'Lock Jaw',Dusko Todorovic 'Thunder',Donte Johnson 'Lock Jaw',0.7489761,0.7489761,0.2510239,Middleweight
-dc6f6c8228390ebb,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Dan Ige '50K',Melquizael Costa 'Melk Cauthy',Melquizael Costa 'Melk Cauthy',0.7487073,0.2512927,0.7487073,Featherweight
-ecd16d14a138d7fb,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Cody Garbrandt 'No Love',Xiao Long,Xiao Long,0.74264765,0.25735232,0.74264765,Bantamweight
-dbf1ee1a1912c735,UFC Fight Night,2026-03-28,Navajo Stirling,Bruno Lopes 'Brunao',Navajo Stirling,0.7355658,0.7355658,0.26443422,Light Heavyweight
-f9f5071b993a5f4b,UFC Fight Night,2026-03-28,Julian Erosa 'Juicy J',Lerryan Douglas 'Gunslinger',Lerryan Douglas 'Gunslinger',0.72861195,0.27138802,0.72861195,Featherweight
-25ab195cefbce1d0,UFC Fight Night,2026-02-28,Cristian Quinonez 'Problema',Kris Moutinho,Cristian Quinonez 'Problema',0.7276664,0.7276664,0.27233362,Bantamweight
-19fbea7a5b97c9fa,UFC Fight Night,2026-02-28,Sofia Montenegro 'La Bruja',Ernesta Kareckaite 'Heavy-Handed',Sofia Montenegro 'La Bruja',0.72601134,0.72601134,0.27398866,Women's Flyweight
-91308e2391df50ba,UFC Fight Night,2026-03-28,Michael Chiesa 'Maverick',Carlston Harris 'Mocambique',Michael Chiesa 'Maverick',0.7254868,0.7254868,0.27451319,Welterweight
-f594fc5c2bc6237e,UFC Fight Night,2026-03-14,Josh Emmett 'CC0',Kevin Vallejos 'El Chino',Kevin Vallejos 'El Chino',0.7240424,0.27595758,0.7240424,Featherweight
-db7694f4513120d5,UFC Fight Night,2026-03-14,Ion Cutelaba 'The Hulk',Oumar Sy,Oumar Sy,0.7109108,0.28908917,0.7109108,Light Heavyweight
-8817bd21b6d0a989,UFC Fight Night,2026-03-21,Mantas Kondratavicius,Antonio Trocoli 'Malvado',Mantas Kondratavicius,0.70871186,0.70871186,0.29128814,Middleweight
-562d916f55918901,UFC Fight Night,2026-03-21,Roman Dolidze,Christian Leroy Duncan 'CLD',Christian Leroy Duncan 'CLD',0.70663327,0.29336673,0.70663327,Middleweight
-36d12b31957e94db,UFC Fight Night,2026-02-28,Marlon Vera 'Chito',David Martinez 'Doctor',David Martinez 'Doctor',0.7030406,0.29695943,0.7030406,Bantamweight
-8d740c844353ae0e,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Sean Strickland,Anthony Hernandez 'Fluffy',Anthony Hernandez 'Fluffy',0.7017874,0.2982126,0.7017874,Middleweight
-216bc9b661485017,UFC Fight Night,2026-03-21,Shanelle Dyer 'The Nightmare',Ravena Oliveira 'Kenoudy',Shanelle Dyer 'The Nightmare',0.6951952,0.6951952,0.3048048,Women's Strawweight
-f030febede41c661,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Max Holloway 'Blessed',Charles Oliveira 'Do Bronxs',Max Holloway 'Blessed',0.6941464,0.6941464,0.3058536,Lightweight
-c40b934d2666e351,UFC Fight Night,2026-02-28,Macy Chiasson,Ailin Perez 'Fiona',Ailin Perez 'Fiona',0.6895462,0.3104538,0.6895462,Women's Bantamweight
-b98ae67303b7edc0,UFC Fight Night,2026-04-04,Tofiq Musayev,Samuel Sanches 'The Prodigy',Samuel Sanches 'The Prodigy',0.6805419,0.31945816,0.6805419,Lightweight
-581292ffe5b09344,UFC Fight Night,2026-02-28,Erik Silva 'The King',Francis Marshall 'Fire',Francis Marshall 'Fire',0.6755175,0.3244825,0.6755175,Featherweight
-bed89a91da9d04c1,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Rob Font,Raul Rosas Jr. 'El Nino Problema',Raul Rosas Jr. 'El Nino Problema',0.6709514,0.32904857,0.6709514,Bantamweight
-3b7b771b9578383d,UFC Fight Night,2026-03-14,Amanda Lemos,Gillian Robertson 'The Savage',Gillian Robertson 'The Savage',0.65678674,0.34321326,0.65678674,Women's Strawweight
-e0acd0cf4930671b,UFC Fight Night,2026-03-14,Marwan Rahiki 'Freaky',Harry Hardwick 'Houdini',Marwan Rahiki 'Freaky',0.6554697,0.6554697,0.34453028,Featherweight
-81f3d28d30d17378,UFC Fight Night,2026-02-28,Daniel Zellhuber 'Golden Boy',King Green,Daniel Zellhuber 'Golden Boy',0.6545059,0.6545059,0.3454941,Lightweight
-a76e14495e61cf19,UFC Fight Night,2026-03-28,Terrance McKinney 'T. Wrecks',Kyle Nelson 'The Monster',Terrance McKinney 'T. Wrecks',0.65080094,0.65080094,0.34919906,Lightweight
-1adcd6d2c2a7a54c,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Austin Vanderford 'The Gentleman',Jean-Paul Lebosnoyani 'Mufasa',Jean-Paul Lebosnoyani 'Mufasa',0.65048563,0.3495144,0.65048563,Welterweight
-15068d7b095ca9bd,UFC Fight Night,2026-02-28,Imanol Rodriguez 'Himan',Kevin Borjas 'El Gallo Negro',Imanol Rodriguez 'Himan',0.6496394,0.6496394,0.35036057,Flyweight
-3b9f50f07d9a1601,UFC Fight Night,2026-03-21,Nathaniel Wood 'The Prospect',Losene Keita 'Black Panther',Losene Keita 'Black Panther',0.6462704,0.35372964,0.6462704,Featherweight
-85e94a6c071fd9fa,UFC Fight Night,2026-03-28,Israel Adesanya 'The Last Stylebender',Joe Pyfer 'Bodybagz',Joe Pyfer 'Bodybagz',0.6432757,0.35672432,0.6432757,Middleweight
-5b97f47cdd355cbe,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Jordan Leavitt 'The Monkey King',Yadier del Valle 'The Cuban Problem',Jordan Leavitt 'The Monkey King',0.6396332,0.6396332,0.36036682,Featherweight
-dd12bf51c5ed7f1e,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Geoff Neal 'Handz of Steel',Uros Medic 'The Doctor',Uros Medic 'The Doctor',0.63804746,0.36195254,0.63804746,Welterweight
-1c50e43770ba84fc,UFC Fight Night,2026-03-28,Casey O'Neill 'King',Gabriella Fernandes 'Gabi',Casey O'Neill 'King',0.6355785,0.6355785,0.3644215,Women's Flyweight
-fd56a469e4589ebc,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Nora Cornolle,Joselyne Edwards 'La Pantera',Joselyne Edwards 'La Pantera',0.6354947,0.3645053,0.6354947,Women's Bantamweight
-202d3277e569ad03,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Chidi Njokuani 'Bang Bang',Carlos Leal 'The Lion',Chidi Njokuani 'Bang Bang',0.6293239,0.6293239,0.3706761,Welterweight
-a22fd3735819d858,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Sumudaerji 'The Tibetan Eagle',Jesus Aguilar,Sumudaerji 'The Tibetan Eagle',0.6246378,0.6246378,0.37536222,Flyweight
-3ee578ddd071ad4c,UFC Fight Night,2026-03-21,Mason Jones 'The Dragon',Axel Sola,Axel Sola,0.6213795,0.37862048,0.6213795,Lightweight
-38f62ba2ea6040f2,UFC Fight Night,2026-02-28,Brandon Moreno 'The Assassin Baby',Asu Almabayev 'Zulfikar',Asu Almabayev 'Zulfikar',0.61732996,0.38267002,0.61732996,Flyweight
-7924f10aac3543de,UFC Fight Night,2026-04-04,Jose Delano,Robert Ruchala 'Faker',Jose Delano,0.61705214,0.61705214,0.38294786,Featherweight
-fa534aaa5b997a69,UFC Fight Night,2026-03-21,Luke Riley,Michael Aswell Jr. 'The Texas Kid',Luke Riley,0.615335,0.615335,0.384665,Featherweight
-7ffdaa44fc8d111b,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Ode Osbourne 'The Jamaican Sensation',Alibi Idiris,Alibi Idiris,0.60730445,0.39269552,0.60730445,Flyweight
-6e78d874097a3d22,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Juliana Miller 'Killer',Carli Judice 'Crispy',Carli Judice 'Crispy',0.60235167,0.3976483,0.60235167,Women's Flyweight
-4e58bcc0d27042fd,UFC Fight Night,2026-03-21,Kurtis Campbell 'The Pink Panther',Danny Silva 'El Puma',Kurtis Campbell 'The Pink Panther',0.60200506,0.60200506,0.39799494,Featherweight
-bfd17ed83ec5b598,UFC Fight Night,2026-03-21,Louie Sutherland 'Vanilla Gorilla',Brando Pericic 'The Balkan Bear',Louie Sutherland 'Vanilla Gorilla',0.5944682,0.5944682,0.40553182,Heavyweight
-43e26b46cbb51985,UFC Fight Night,2026-03-21,Iwo Baraniewski 'Rudy',Austen Lane,Iwo Baraniewski 'Rudy',0.58947927,0.58947927,0.41052073,Light Heavyweight
-275547b95761a9a8,UFC 326: Holloway vs. Oliveira 2,2026-03-07,JooSang Yoo 'Zombie Jr.',Gaston Bolanos 'The Dreamkiller',JooSang Yoo 'Zombie Jr.',0.58823645,0.58823645,0.41176355,Featherweight
-e5decc33aa81371a,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Paulo Costa 'The Eraser',Brunno Ferreira 'The Hulk',Brunno Ferreira 'The Hulk',0.5854579,0.41454205,0.5854579,Middleweight
-bbe0f3653de9f6a8,UFC Fight Night,2026-03-21,Shem Rock,Abdul-Kareem Al-Selwady 'Pride of Palestine',Abdul-Kareem Al-Selwady 'Pride of Palestine',0.57840574,0.42159423,0.57840574,Lightweight
-6bf45e934d5b5829,UFC Fight Night,2026-03-14,Bruno Silva 'Bulldog',Lone'er Kavanagh,Lone'er Kavanagh,0.5776303,0.42236975,0.5776303,Flyweight
-f759da8bfe3997b8,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Jacobe Smith 'Cobe',Seokhyeon Ko 'The Korean Tyson',Seokhyeon Ko 'The Korean Tyson',0.5774087,0.42259133,0.5774087,Welterweight
-8cab057e6549afd0,UFC Fight Night,2026-03-14,Bia Mesquita,Montse Rendon 'Monster',Bia Mesquita,0.5759726,0.5759726,0.42402738,Women's Bantamweight
-fc9168fd102e2e66,UFC Fight Night,2026-03-14,Charles Johnson 'InnerG',Bruno Silva 'Bulldog',Charles Johnson 'InnerG',0.5756229,0.5756229,0.42437708,Flyweight
-82fed3db76e441e9,UFC Fight Night,2026-04-04,Edmen Shahbazyan 'The Golden Boy',JunYong Park 'The Iron Turtle',Edmen Shahbazyan 'The Golden Boy',0.56400025,0.56400025,0.43599975,Middleweight
-848138869e0ded95,UFC Fight Night,2026-03-28,Carol Foro 'Anabelle',Stephanie Luciano 'Rondinha',Carol Foro 'Anabelle',0.56015843,0.56015843,0.43984157,Women's Strawweight
-7df505d8260ba680,UFC Fight Night,2026-02-28,Edgar Chairez 'Puro Chicali',Felipe Bunes 'Felipinho',Edgar Chairez 'Puro Chicali',0.55390096,0.55390096,0.44609904,Flyweight
-a5abdc461cb1538e,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Luke Fernandez,Rodolfo Bellato 'Trator',Luke Fernandez,0.55238056,0.55238056,0.44761944,Light Heavyweight
-e0cd101a42452674,UFC Fight Night,2026-03-21,Melissa Mullins 'No Mess',Luana Carolina 'Dread',Melissa Mullins 'No Mess',0.55121756,0.55121756,0.44878244,Women's Bantamweight
-372d1dee0db8dbee,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Zach Reese 'Savage',Michel Pereira 'Demolidor',Michel Pereira 'Demolidor',0.5502126,0.44978735,0.5502126,Middleweight
-e32dc26b11d1f81d,UFC Fight Night,2026-03-28,Mansur Abdul-Malik,Yousri Belgaroui,Mansur Abdul-Malik,0.54855794,0.54855794,0.45144206,Middleweight
-04b7bcc0e8488604,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Serghei Spivac 'Polar Bear',Ante Delija 'Walking Trouble',Ante Delija 'Walking Trouble',0.54641974,0.4535803,0.54641974,Heavyweight
-346e3897c2ead99a,UFC Fight Night,2026-03-21,Movsar Evloev,Lerone Murphy 'The Miracle',Movsar Evloev,0.5395142,0.5395142,0.46048582,Featherweight
-f661ef429055f8c1,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Cody Durden 'Custom Made',Nyamjargal Tumendemberel 'Art of Knockout',Cody Durden 'Custom Made',0.5370815,0.5370815,0.46291852,Flyweight
-d564db29997e1371,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Caio Borralho 'The Natural',Reinier de Ridder 'RdR',Caio Borralho 'The Natural',0.5278168,0.5278168,0.47218323,Middleweight
-f44b4e998b6829f6,UFC Fight Night,2026-03-14,Elijah Smith 'Swift',SuYoung You 'Yoo-Jitsu',SuYoung You 'Yoo-Jitsu',0.52511966,0.47488037,0.52511966,Bantamweight
-8f9896e60047007f,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Ramiz Brahimaj,Punahele Soriano 'Puna',Ramiz Brahimaj,0.5220407,0.5220407,0.47795928,Welterweight
-244285b7fd0ddece,UFC Fight Night,2026-03-14,Piera Rodriguez 'La Fiera',Sam Hughes 'Sampage',Sam Hughes 'Sampage',0.51803094,0.48196906,0.51803094,Women's Strawweight
-5ee11b727e89e8ad,UFC Fight Night,2026-03-21,Michael Page 'Venom',Sam Patterson,Sam Patterson,0.51593673,0.48406324,0.51593673,Welterweight
-6a4738656c493ee9,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Gregory Rodrigues 'Robocop',Brunno Ferreira 'The Hulk',Gregory Rodrigues 'Robocop',0.513014,0.513014,0.48698598,Middleweight
-54437b8dba3a6110,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Jacobe Smith 'Cobe',Josiah Harrell 'Muscle Hamster',Josiah Harrell 'Muscle Hamster',0.51289594,0.48710406,0.51289594,Welterweight
-1330b5c21269fe92,UFC Fight Night,2026-02-28,Brandon Moreno 'The Assassin Baby',Lone'er Kavanagh,Brandon Moreno 'The Assassin Baby',0.51142395,0.51142395,0.48857605,Flyweight
-1fda59267595482f,UFC Fight Night,2026-03-21,Mick Parkin,Mario Pinto,Mario Pinto,0.5070965,0.49290347,0.5070965,Heavyweight
-13dbcd763d5bfbd6,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Renato Moicano,Brian Ortega 'T-City',Renato Moicano,0.504023,0.504023,0.49597698,Lightweight
-75f12722b87893d7,UFC Fight Night,2026-03-28,Marcin Tybura 'Tybur',Valter Walker 'The Clean Monster',Valter Walker 'The Clean Monster',0.50363314,0.49636686,0.50363314,Heavyweight
+45ec0c5f19c9adbe,UFC Fight Night,2026-02-28,Ryan Gandra 'Problema',Jose Daniel Medina 'Chicho',Ryan Gandra 'Problema',0.7964657545089722,0.7964657545089722,0.20353424549102783,Middleweight
+b40567cc87a8287f,UFC Fight Night,2026-03-14,Rinya Nakamura 'Hybred',Luan Lacerda,Rinya Nakamura 'Hybred',0.7901753187179565,0.7901753187179565,0.20982468128204346,Bantamweight
+ecd16d14a138d7fb,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Cody Garbrandt 'No Love',Xiao Long,Xiao Long,0.7794715762138367,0.22052843868732452,0.7794715762138367,Bantamweight
+ac39c1f00ae31e58,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Alden Coria 'Cobra',Luis Gurule 'Grim',Alden Coria 'Cobra',0.7727261,0.7727261,0.22727388,Flyweight
+689384b01b40ef5c,UFC Fight Night,2026-03-28,Chase Hooper 'The Dream',Lance Gibson Jr. 'Fearless',Chase Hooper 'The Dream',0.7615156769752502,0.7615156769752502,0.23848432302474976,Lightweight
+3b76a00f5d0400eb,UFC Fight Night,2026-02-28,Santiago Luna 'BorderBoy',Angel Pacheco,Santiago Luna 'BorderBoy',0.7612984776496887,0.7612984776496887,0.23870152235031128,Bantamweight
+6154ee95d3f4fc32,UFC Fight Night,2026-02-28,Douglas Silva de Andrade 'D Silva',Javier Reyes 'Blair',Javier Reyes 'Blair',0.7607148885726929,0.23928509652614594,0.7607148885726929,Featherweight
+dbf1ee1a1912c735,UFC Fight Night,2026-03-28,Navajo Stirling,Bruno Lopes 'Brunao',Navajo Stirling,0.7585874795913696,0.7585874795913696,0.24141252040863037,Light Heavyweight
+f594fc5c2bc6237e,UFC Fight Night,2026-03-14,Josh Emmett 'CC0',Kevin Vallejos 'El Chino',Kevin Vallejos 'El Chino',0.7559670209884644,0.24403296411037445,0.7559670209884644,Featherweight
+508e622130b0a84d,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Phil Rowe 'The Fresh Prince',Jean-Paul Lebosnoyani 'Mufasa',Jean-Paul Lebosnoyani 'Mufasa',0.74051857,0.2594814,0.74051857,Welterweight
+db7694f4513120d5,UFC Fight Night,2026-03-14,Ion Cutelaba 'The Hulk',Oumar Sy,Oumar Sy,0.7392023801803589,0.2607975900173187,0.7392023801803589,Light Heavyweight
+dc6f6c8228390ebb,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Dan Ige '50K',Melquizael Costa 'Melk Cauthy',Melquizael Costa 'Melk Cauthy',0.7390979,0.2609021,0.7390979,Featherweight
+562d916f55918901,UFC Fight Night,2026-03-21,Roman Dolidze,Christian Leroy Duncan 'CLD',Christian Leroy Duncan 'CLD',0.7366446256637573,0.26335540413856506,0.7366446256637573,Middleweight
+36d12b31957e94db,UFC Fight Night,2026-02-28,Marlon Vera 'Chito',David Martinez 'Doctor',David Martinez 'Doctor',0.7364568710327148,0.26354309916496277,0.7364568710327148,Bantamweight
+25ab195cefbce1d0,UFC Fight Night,2026-02-28,Cristian Quinonez 'Problema',Kris Moutinho,Cristian Quinonez 'Problema',0.7294949293136597,0.7294949293136597,0.27050507068634033,Bantamweight
+f030febede41c661,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Max Holloway 'Blessed',Charles Oliveira 'Do Bronxs',Max Holloway 'Blessed',0.7244338989257812,0.7244338989257812,0.27556610107421875,Lightweight
+c769dd861357af9f,UFC Fight Night,2026-03-14,Bolaji Oki 'The Zulu Warrior',Manoel Sousa 'Manumito',Manoel Sousa 'Manumito',0.7164101600646973,0.28358983993530273,0.7164101600646973,Lightweight
+8817bd21b6d0a989,UFC Fight Night,2026-03-21,Mantas Kondratavicius,Antonio Trocoli 'Malvado',Mantas Kondratavicius,0.7155613303184509,0.7155613303184509,0.2844386696815491,Middleweight
+32d371462c539bee,UFC Fight Night,2026-03-14,Luan Lacerda,Hecher Sosa 'Guanche Warrior',Hecher Sosa 'Guanche Warrior',0.7137174010276794,0.28628259897232056,0.7137174010276794,Bantamweight
+c40b934d2666e351,UFC Fight Night,2026-02-28,Macy Chiasson,Ailin Perez 'Fiona',Ailin Perez 'Fiona',0.7120041847229004,0.2879957854747772,0.7120041847229004,Women's Bantamweight
+a2955d6c7503cf88,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Donte Johnson 'Lock Jaw',Dusko Todorovic 'Thunder',Donte Johnson 'Lock Jaw',0.7075201272964478,0.7075201272964478,0.29247987270355225,Middleweight
+bed89a91da9d04c1,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Rob Font,Raul Rosas Jr. 'El Nino Problema',Raul Rosas Jr. 'El Nino Problema',0.7069288492202759,0.29307112097740173,0.7069288492202759,Bantamweight
+9a0ecee6e8ca173f,UFC Fight Night,2026-03-28,Alexa Grasso,Maycee Barber 'The Future',Maycee Barber 'The Future',0.7033039331436157,0.29669609665870667,0.7033039331436157,Women's Flyweight
+6feb49a6b7e8433c,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Ricky Turcios,Alberto Montes 'The Promise',Alberto Montes 'The Promise',0.7016746997833252,0.2983252704143524,0.7016746997833252,Featherweight
+3b7b771b9578383d,UFC Fight Night,2026-03-14,Amanda Lemos,Gillian Robertson 'The Savage',Gillian Robertson 'The Savage',0.6983557343482971,0.3016442656517029,0.6983557343482971,Women's Strawweight
+74bb036ef0493bf7,UFC Fight Night,2026-04-04,Alice Pereira 'Golden Girl',Hailey Cowan 'All Hail',Alice Pereira 'Golden Girl',0.6931228041648865,0.6931228041648865,0.3068771958351135,Women's Bantamweight
+8d740c844353ae0e,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Sean Strickland,Anthony Hernandez 'Fluffy',Anthony Hernandez 'Fluffy',0.6910017,0.3089983,0.6910017,Middleweight
+581292ffe5b09344,UFC Fight Night,2026-02-28,Erik Silva 'The King',Francis Marshall 'Fire',Francis Marshall 'Fire',0.6873234510421753,0.3126765787601471,0.6873234510421753,Featherweight
+32054bf2b36b0e47,UFC Fight Night: Burns vs. Malott,2026-04-18,Gilbert Burns 'Durinho',Mike Malott 'Proper',Mike Malott 'Proper',0.6818856000900269,0.31811437010765076,0.6818856000900269,Welterweight
+8cab057e6549afd0,UFC Fight Night,2026-03-14,Bia Mesquita,Montse Rendon 'Monster',Bia Mesquita,0.6787700057029724,0.6787700057029724,0.3212299942970276,Women's Bantamweight
+f9f5071b993a5f4b,UFC Fight Night,2026-03-28,Julian Erosa 'Juicy J',Lerryan Douglas 'Gunslinger',Lerryan Douglas 'Gunslinger',0.675592303276062,0.3244077265262604,0.675592303276062,Featherweight
+7924f10aac3543de,UFC Fight Night,2026-04-04,Jose Delano,Robert Ruchala 'Faker',Jose Delano,0.6718662977218628,0.6718662977218628,0.3281337022781372,Featherweight
+19fbea7a5b97c9fa,UFC Fight Night,2026-02-28,Sofia Montenegro 'La Bruja',Ernesta Kareckaite 'Heavy-Handed',Sofia Montenegro 'La Bruja',0.6694971323013306,0.6694971323013306,0.33050286769866943,Women's Flyweight
+1c50e43770ba84fc,UFC Fight Night,2026-03-28,Casey O'Neill 'King',Gabriella Fernandes 'Gabi',Casey O'Neill 'King',0.6680020689964294,0.6680020689964294,0.33199793100357056,Women's Flyweight
+3b9f50f07d9a1601,UFC Fight Night,2026-03-21,Nathaniel Wood 'The Prospect',Losene Keita 'Black Panther',Losene Keita 'Black Panther',0.6647545099258423,0.3352454900741577,0.6647545099258423,Featherweight
+f506977877074aa6,UFC 327,2026-04-11,Tatiana Suarez,Loopy Godinez,Tatiana Suarez,0.662002444267273,0.662002444267273,0.33799755573272705,Women's Strawweight
+b98ae67303b7edc0,UFC Fight Night,2026-04-04,Tofiq Musayev,Samuel Sanches 'The Prodigy',Samuel Sanches 'The Prodigy',0.658444881439209,0.3415551483631134,0.658444881439209,Lightweight
+af2a9d47ca8115e4,UFC Fight Night,2026-04-04,Alessandro Costa 'Nono',Stewart Nicoll 'Kakamora',Alessandro Costa 'Nono',0.6580318212509155,0.6580318212509155,0.3419681787490845,Flyweight
+91308e2391df50ba,UFC Fight Night,2026-03-28,Michael Chiesa 'Maverick',Carlston Harris 'Mocambique',Michael Chiesa 'Maverick',0.6555545330047607,0.6555545330047607,0.34444546699523926,Welterweight
+fa534aaa5b997a69,UFC Fight Night,2026-03-21,Luke Riley,Michael Aswell Jr. 'The Texas Kid',Luke Riley,0.6554518938064575,0.6554518938064575,0.3445481061935425,Featherweight
+a22fd3735819d858,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Sumudaerji 'The Tibetan Eagle',Jesus Aguilar,Sumudaerji 'The Tibetan Eagle',0.6553051471710205,0.6553051471710205,0.3446948528289795,Flyweight
+85e94a6c071fd9fa,UFC Fight Night,2026-03-28,Israel Adesanya 'The Last Stylebender',Joe Pyfer 'Bodybagz',Joe Pyfer 'Bodybagz',0.6540930867195129,0.34590691328048706,0.6540930867195129,Middleweight
+6bf45e934d5b5829,UFC Fight Night,2026-03-14,Bruno Silva 'Bulldog',Lone'er Kavanagh,Lone'er Kavanagh,0.6446751952171326,0.35532480478286743,0.6446751952171326,Flyweight
+81f3d28d30d17378,UFC Fight Night,2026-02-28,Daniel Zellhuber 'Golden Boy',King Green,Daniel Zellhuber 'Golden Boy',0.6443237662315369,0.6443237662315369,0.35567623376846313,Lightweight
+216bc9b661485017,UFC Fight Night,2026-03-21,Shanelle Dyer 'The Nightmare',Ravena Oliveira 'Kenoudy',Shanelle Dyer 'The Nightmare',0.6379305124282837,0.6379305124282837,0.3620694875717163,Women's Strawweight
+202d3277e569ad03,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Chidi Njokuani 'Bang Bang',Carlos Leal 'The Lion',Chidi Njokuani 'Bang Bang',0.63702136,0.63702136,0.36297864,Welterweight
+8bee5192baec71d8,UFC Fight Night,2026-03-14,Andre Fili 'Touchy',Jose Delgado,Jose Delgado,0.6334657669067383,0.3665342330932617,0.6334657669067383,Featherweight
+a76e14495e61cf19,UFC Fight Night,2026-03-28,Terrance McKinney 'T. Wrecks',Kyle Nelson 'The Monster',Terrance McKinney 'T. Wrecks',0.6331711411476135,0.6331711411476135,0.3668288588523865,Lightweight
+1adcd6d2c2a7a54c,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Austin Vanderford 'The Gentleman',Jean-Paul Lebosnoyani 'Mufasa',Jean-Paul Lebosnoyani 'Mufasa',0.63201225,0.36798778,0.63201225,Welterweight
+5b97f47cdd355cbe,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Jordan Leavitt 'The Monkey King',Yadier del Valle 'The Cuban Problem',Jordan Leavitt 'The Monkey King',0.62173307,0.62173307,0.37826693,Featherweight
+82fed3db76e441e9,UFC Fight Night,2026-04-04,Edmen Shahbazyan 'The Golden Boy',JunYong Park 'The Iron Turtle',Edmen Shahbazyan 'The Golden Boy',0.6202258467674255,0.6202258467674255,0.37977415323257446,Middleweight
+15068d7b095ca9bd,UFC Fight Night,2026-02-28,Imanol Rodriguez 'Himan',Kevin Borjas 'El Gallo Negro',Imanol Rodriguez 'Himan',0.6197447776794434,0.6197447776794434,0.38025522232055664,Flyweight
+dd12bf51c5ed7f1e,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Geoff Neal 'Handz of Steel',Uros Medic 'The Doctor',Uros Medic 'The Doctor',0.6189651,0.3810349,0.6189651,Welterweight
+6e78d874097a3d22,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Juliana Miller 'Killer',Carli Judice 'Crispy',Carli Judice 'Crispy',0.61885214,0.38114783,0.61885214,Women's Flyweight
+38f62ba2ea6040f2,UFC Fight Night,2026-02-28,Brandon Moreno 'The Assassin Baby',Asu Almabayev 'Zulfikar',Asu Almabayev 'Zulfikar',0.6120412349700928,0.38795873522758484,0.6120412349700928,Flyweight
+fd56a469e4589ebc,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Nora Cornolle,Joselyne Edwards 'La Pantera',Joselyne Edwards 'La Pantera',0.6096988,0.39030126,0.6096988,Women's Bantamweight
+d564db29997e1371,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Caio Borralho 'The Natural',Reinier de Ridder 'RdR',Caio Borralho 'The Natural',0.6090589165687561,0.6090589165687561,0.3909410834312439,Middleweight
+d69bd8e53ec858dc,UFC Fight Night,2026-04-04,Renato Moicano,Chris Duncan 'The Problem',Chris Duncan 'The Problem',0.6080628633499146,0.39193710684776306,0.6080628633499146,Lightweight
+4e58bcc0d27042fd,UFC Fight Night,2026-03-21,Kurtis Campbell 'The Pink Panther',Danny Silva 'El Puma',Kurtis Campbell 'The Pink Panther',0.6033586263656616,0.6033586263656616,0.3966413736343384,Featherweight
+7ffdaa44fc8d111b,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Ode Osbourne 'The Jamaican Sensation',Alibi Idiris,Alibi Idiris,0.6017205,0.3982795,0.6017205,Flyweight
+275547b95761a9a8,UFC 326: Holloway vs. Oliveira 2,2026-03-07,JooSang Yoo 'Zombie Jr.',Gaston Bolanos 'The Dreamkiller',JooSang Yoo 'Zombie Jr.',0.5992841124534607,0.5992841124534607,0.4007158875465393,Featherweight
+4df184230c8ca378,UFC Fight Night: Brady vs. Buckley,2026-04-25,Sean Brady,Joaquin Buckley 'New Mansa',Sean Brady,0.5967494249343872,0.5967494249343872,0.4032505750656128,Welterweight
+75f12722b87893d7,UFC Fight Night,2026-03-28,Marcin Tybura 'Tybur',Valter Walker 'The Clean Monster',Valter Walker 'The Clean Monster',0.5966566205024719,0.4033433794975281,0.5966566205024719,Heavyweight
+a5abdc461cb1538e,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Luke Fernandez,Rodolfo Bellato 'Trator',Luke Fernandez,0.5910134315490723,0.5910134315490723,0.40898656845092773,Light Heavyweight
+6a4738656c493ee9,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Gregory Rodrigues 'Robocop',Brunno Ferreira 'The Hulk',Gregory Rodrigues 'Robocop',0.5861137509346008,0.5861137509346008,0.41388624906539917,Middleweight
+721642e7de112e9e,UFC Fight Night,2026-04-04,Virna Jandiroba 'Carcara',Tabatha Ricci 'Baby Shark',Tabatha Ricci 'Baby Shark',0.5759538412094116,0.424046128988266,0.5759538412094116,Women's Strawweight
+e32dc26b11d1f81d,UFC Fight Night,2026-03-28,Mansur Abdul-Malik,Yousri Belgaroui,Yousri Belgaroui,0.5719619989395142,0.42803800106048584,0.5719619989395142,Middleweight
+13dbcd763d5bfbd6,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Renato Moicano,Brian Ortega 'T-City',Renato Moicano,0.569896936416626,0.569896936416626,0.430103063583374,Lightweight
+3ee578ddd071ad4c,UFC Fight Night,2026-03-21,Mason Jones 'The Dragon',Axel Sola,Axel Sola,0.569288969039917,0.4307110607624054,0.569288969039917,Lightweight
+f759da8bfe3997b8,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Jacobe Smith 'Cobe',Seokhyeon Ko 'The Korean Tyson',Seokhyeon Ko 'The Korean Tyson',0.56740654,0.43259344,0.56740654,Welterweight
+372d1dee0db8dbee,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Zach Reese 'Savage',Michel Pereira 'Demolidor',Michel Pereira 'Demolidor',0.5583544,0.44164562,0.5583544,Middleweight
+04b7bcc0e8488604,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Serghei Spivac 'Polar Bear',Ante Delija 'Walking Trouble',Ante Delija 'Walking Trouble',0.55101633,0.44898367,0.55101633,Heavyweight
+54437b8dba3a6110,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Jacobe Smith 'Cobe',Josiah Harrell 'Muscle Hamster',Josiah Harrell 'Muscle Hamster',0.5502054,0.4497946,0.5502054,Welterweight
+caf13346cbcfdb03,UFC Fight Night,2026-04-04,Dione Barbosa 'The Witch',Melissa Gatto,Melissa Gatto,0.548724353313446,0.45127564668655396,0.548724353313446,Women's Flyweight
+b4e16fb13153efdc,UFC 327,2026-04-11,Kevin Holland 'Trailblazer',Randy Brown 'Rudeboy',Kevin Holland 'Trailblazer',0.5466978549957275,0.5466978549957275,0.45330214500427246,Welterweight
+43e26b46cbb51985,UFC Fight Night,2026-03-21,Iwo Baraniewski 'Rudy',Austen Lane,Iwo Baraniewski 'Rudy',0.5457615256309509,0.5457615256309509,0.4542384743690491,Light Heavyweight
+346e3897c2ead99a,UFC Fight Night,2026-03-21,Movsar Evloev,Lerone Murphy 'The Miracle',Movsar Evloev,0.5443800687789917,0.5443800687789917,0.4556199312210083,Featherweight
+8f9896e60047007f,UFC Fight Night: Strickland vs. Hernandez,2026-02-21,Ramiz Brahimaj,Punahele Soriano 'Puna',Ramiz Brahimaj,0.54325664,0.54325664,0.45674336,Welterweight
+1fda59267595482f,UFC Fight Night,2026-03-21,Mick Parkin,Mario Pinto,Mario Pinto,0.5429098606109619,0.4570901393890381,0.5429098606109619,Heavyweight
+e0cd101a42452674,UFC Fight Night,2026-03-21,Melissa Mullins 'No Mess',Luana Carolina 'Dread',Melissa Mullins 'No Mess',0.5428285598754883,0.5428285598754883,0.4571714401245117,Women's Bantamweight
+0760bc02280574dd,UFC Fight Night,2026-04-04,Guilherme Pat 'Kong',Thomas Petersen 'The Train',Thomas Petersen 'The Train',0.5428249835968018,0.45717504620552063,0.5428249835968018,Light Heavyweight
+9b96157ac32a6468,UFC 327,2026-04-11,Joshua Van 'The Fearless',Tatsuro Taira 'The Best',Joshua Van 'The Fearless',0.5400256514549255,0.5400256514549255,0.45997434854507446,Flyweight
+bfd17ed83ec5b598,UFC Fight Night,2026-03-21,Louie Sutherland 'Vanilla Gorilla',Brando Pericic 'The Balkan Bear',Louie Sutherland 'Vanilla Gorilla',0.5395021438598633,0.5395021438598633,0.4604978561401367,Heavyweight
+7df505d8260ba680,UFC Fight Night,2026-02-28,Edgar Chairez 'Puro Chicali',Felipe Bunes 'Felipinho',Edgar Chairez 'Puro Chicali',0.5374221205711365,0.5374221205711365,0.4625778794288635,Flyweight
+1330b5c21269fe92,UFC Fight Night,2026-02-28,Brandon Moreno 'The Assassin Baby',Lone'er Kavanagh,Brandon Moreno 'The Assassin Baby',0.5332397818565369,0.5332397818565369,0.46676021814346313,Flyweight
+e0acd0cf4930671b,UFC Fight Night,2026-03-14,Marwan Rahiki 'Freaky',Harry Hardwick 'Houdini',Marwan Rahiki 'Freaky',0.5329560041427612,0.5329560041427612,0.46704399585723877,Featherweight
+bbe0f3653de9f6a8,UFC Fight Night,2026-03-21,Shem Rock,Abdul-Kareem Al-Selwady 'Pride of Palestine',Abdul-Kareem Al-Selwady 'Pride of Palestine',0.529944658279419,0.47005537152290344,0.529944658279419,Lightweight
+fef80c98b2fba70c,UFC Fight Night,2026-04-04,Ethyn Ewing 'The Professor Finesser',Rafael Estevam 'Macapa',Ethyn Ewing 'The Professor Finesser',0.5287518501281738,0.5287518501281738,0.47124814987182617,Bantamweight
+f661ef429055f8c1,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Cody Durden 'Custom Made',Nyamjargal Tumendemberel 'Art of Knockout',Cody Durden 'Custom Made',0.524018406867981,0.524018406867981,0.47598159313201904,Flyweight
+fc9168fd102e2e66,UFC Fight Night,2026-03-14,Charles Johnson 'InnerG',Bruno Silva 'Bulldog',Charles Johnson 'InnerG',0.5239651799201965,0.5239651799201965,0.47603482007980347,Flyweight
+848138869e0ded95,UFC Fight Night,2026-03-28,Carol Foro 'Anabelle',Stephanie Luciano 'Rondinha',Carol Foro 'Anabelle',0.5224249362945557,0.5224249362945557,0.47757506370544434,Women's Strawweight
+e5decc33aa81371a,UFC 326: Holloway vs. Oliveira 2,2026-03-07,Paulo Costa 'The Eraser',Brunno Ferreira 'The Hulk',Brunno Ferreira 'The Hulk',0.5212597846984863,0.4787401854991913,0.5212597846984863,Middleweight
+2c330a6f7f1e55f0,UFC Fight Night,2026-03-14,Vitor Petrino,Steven Asplund 'Concrete',Vitor Petrino,0.5181446075439453,0.5181446075439453,0.4818553924560547,Heavyweight
+244285b7fd0ddece,UFC Fight Night,2026-03-14,Piera Rodriguez 'La Fiera',Sam Hughes 'Sampage',Sam Hughes 'Sampage',0.5180158019065857,0.4819841980934143,0.5180158019065857,Women's Strawweight
+f44b4e998b6829f6,UFC Fight Night,2026-03-14,Elijah Smith 'Swift',SuYoung You 'Yoo-Jitsu',SuYoung You 'Yoo-Jitsu',0.5122807025909424,0.4877192974090576,0.5122807025909424,Bantamweight
+5ee11b727e89e8ad,UFC Fight Night,2026-03-21,Michael Page 'Venom',Sam Patterson,Michael Page 'Venom',0.5073269605636597,0.5073269605636597,0.49267303943634033,Welterweight

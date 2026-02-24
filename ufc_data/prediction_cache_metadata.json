@@ -1,15 +1,17 @@
 {
-  "creation_timestamp": 1771045490.162598,
+  "creation_timestamp": 1771899168.0726645,
   "upcoming_events": [
-    "79ab17db3b40831a",
     "0cfbbfa0ba6d9855",
     "15ec018d144710db",
     "babc6b5745335f18",
     "69108cb8b32efe04",
     "5c38639f860a5542",
-    "9a70f67ad2187fa3"
+    "9a70f67ad2187fa3",
+    "f3eb664db7fb1df3",
+    "c3ac8d0da7b05772",
+    "e60d773a0a42048a"
   ],
-  "num_upcoming_events": 7,
-  "num_prediction_fights": 156,
+  "num_upcoming_events": 9,
+  "num_prediction_fights": 171,
   "cache_type": "prediction"
 }

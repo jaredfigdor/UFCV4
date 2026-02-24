@@ -373,14 +373,14 @@ def train_and_predict(data_folder: Path, retrain_model: bool = False) -> tuple[d
         # Add readable fight information
         predictions = _enhance_predictions_with_context(predictions, data_folder)
 
-        # Save predictions
+        # Save predictions with upsert logic (update existing, insert new)
         predictions_file = data_folder / "fight_predictions.csv"
-        predictions.to_csv(predictions_file, index=False)
+        predictions = _upsert_predictions(predictions, predictions_file, logger)
 
         logger.info(f" Predictions saved to {predictions_file}")
         logger.info(f" Generated predictions for {len(predictions)} upcoming fights")
 
-        # Also save a readable summary
+        # Also save a readable summary with upsert logic
         readable_file = data_folder / "fight_predictions_summary.csv"
         if 'fighter_1_name' in predictions.columns and 'fighter_2_name' in predictions.columns:
             summary_cols = [
@@ -393,11 +393,14 @@ def train_and_predict(data_folder: Path, retrain_model: bool = False) -> tuple[d
             available_cols = [col for col in summary_cols if col in predictions.columns]
             readable_predictions = predictions[available_cols].copy()
 
-            # Sort by confidence (highest first) and event date
+            # Upsert into summary file
+            readable_predictions = _upsert_predictions(readable_predictions, readable_file, logger)
+
+            # Sort by confidence (highest first) for display
             if 'confidence' in readable_predictions.columns:
                 readable_predictions = readable_predictions.sort_values('confidence', ascending=False)
+                readable_predictions.to_csv(readable_file, index=False)
 
-            readable_predictions.to_csv(readable_file, index=False)
             logger.info(f" Readable predictions summary saved to {readable_file}")
 
         # Show top feature importance
@@ -412,6 +415,83 @@ def train_and_predict(data_folder: Path, retrain_model: bool = False) -> tuple[d
     except Exception as e:
         logger.error(f"Error in ML prediction pipeline: {e}")
         raise
+
+
+def _upsert_predictions(new_predictions: pd.DataFrame, file_path: Path, logger) -> pd.DataFrame:
+    """
+    Upsert predictions into CSV file - update existing records, insert new ones.
+
+    Args:
+        new_predictions: New predictions DataFrame with fight_id column
+        file_path: Path to the predictions CSV file
+        logger: Logger instance for logging
+
+    Returns:
+        Combined DataFrame with all predictions (historical + new/updated)
+    """
+    if 'fight_id' not in new_predictions.columns:
+        logger.warning("No fight_id column found in predictions - saving without upsert")
+        new_predictions.to_csv(file_path, index=False)
+        return new_predictions
+
+    # Load existing predictions if file exists
+    if file_path.exists():
+        try:
+            existing_predictions = pd.read_csv(file_path)
+            logger.info(f"Loaded {len(existing_predictions)} existing predictions from {file_path.name}")
+
+            # Check if existing file has fight_id column
+            if 'fight_id' not in existing_predictions.columns:
+                logger.warning(f"Existing {file_path.name} has no fight_id column - replacing file")
+                new_predictions.to_csv(file_path, index=False)
+                return new_predictions
+
+            # Identify which fights are updates vs new inserts
+            new_fight_ids = set(new_predictions['fight_id'])
+            existing_fight_ids = set(existing_predictions['fight_id'])
+
+            updated_fights = new_fight_ids & existing_fight_ids
+            inserted_fights = new_fight_ids - existing_fight_ids
+
+            # Remove old versions of updated fights from existing data
+            if updated_fights:
+                existing_predictions = existing_predictions[
+                    ~existing_predictions['fight_id'].isin(updated_fights)
+                ]
+                logger.info(f"  Updating {len(updated_fights)} existing fight predictions")
+
+            if inserted_fights:
+                logger.info(f"  Inserting {len(inserted_fights)} new fight predictions")
+
+            # Combine: keep all old predictions (except updated ones) + all new predictions
+            combined_predictions = pd.concat(
+                [existing_predictions, new_predictions],
+                ignore_index=True
+            )
+
+            # Ensure consistent column order (new predictions columns first)
+            # This handles cases where new predictions have additional columns
+            all_columns = list(new_predictions.columns)
+            for col in existing_predictions.columns:
+                if col not in all_columns:
+                    all_columns.append(col)
+
+            # Reorder columns and fill missing values
+            combined_predictions = combined_predictions.reindex(columns=all_columns)
+
+            logger.info(f"  Total predictions after upsert: {len(combined_predictions)}")
+
+        except Exception as e:
+            logger.warning(f"Error loading existing predictions: {e} - creating new file")
+            combined_predictions = new_predictions
+    else:
+        logger.info(f"Creating new predictions file: {file_path.name}")
+        combined_predictions = new_predictions
+
+    # Save combined predictions
+    combined_predictions.to_csv(file_path, index=False)
+
+    return combined_predictions
 
 
 def _enhance_predictions_with_context(predictions: pd.DataFrame, data_folder: Path) -> pd.DataFrame:

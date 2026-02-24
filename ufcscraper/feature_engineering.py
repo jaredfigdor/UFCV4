@@ -562,9 +562,9 @@ class FeatureEngineering:
                             if fight['winner'] == fighter_id:
                                 wins += 1
 
-                            # Check for finish
-                            if fight.get('result') in ['KO/TKO', 'Submission']:
-                                finishes += 1
+                                # Check for finish WIN (only count if fighter won by finish)
+                                if fight.get('result') in ['KO/TKO', 'Submission']:
+                                    finishes += 1
 
                             # Fight time (approximate from finish round and time)
                             if pd.notna(fight.get('finish_round')) and pd.notna(fight.get('finish_time')):

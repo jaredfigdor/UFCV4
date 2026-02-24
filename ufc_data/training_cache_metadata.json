@@ -1,5 +1,5 @@
 {
-  "creation_timestamp": 1771045475.6063406,
+  "creation_timestamp": 1771899150.9408474,
   "processed_events": [
     "a6a9ab5a824e8f66",
     "1a49e0670dfaca31",
@@ -760,10 +760,11 @@
     "bc0f994de0521926",
     "00e11b5c8b7bfeeb",
     "30ad2050273d016a",
-    "c337c3c85b1871e0"
+    "c337c3c85b1871e0",
+    "79ab17db3b40831a"
   ],
-  "num_events": 760,
-  "num_fights": 8531,
+  "num_events": 761,
+  "num_fights": 8545,
   "min_fights_per_fighter": 1,
   "cache_type": "training"
 }
